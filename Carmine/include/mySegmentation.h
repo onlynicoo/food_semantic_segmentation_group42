@@ -5,7 +5,7 @@
 
 cv::Mat K_Means(const cv::Mat &, int);
 
-std::vector<cv::Mat> extractRegionOfKMeans(const cv::Mat&);
+std::vector<cv::Mat> extractRegionOfKMeans(const cv::Mat&, const cv::Mat&);
 
 std::vector<double> calculateCentroid(const std::vector<std::vector<double>>&);
 

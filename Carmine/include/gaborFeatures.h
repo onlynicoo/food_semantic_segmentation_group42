@@ -21,4 +21,6 @@ double computeContrast(const cv::Mat&);
 
 std::vector<double> getColorGaborFeatures(const cv::Mat& region);
 
+std::vector<double> calculateColorFeatures(const cv::Mat& image);
+
 //#endif // End of header guard

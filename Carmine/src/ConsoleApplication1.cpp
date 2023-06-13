@@ -52,6 +52,8 @@ int main()
                 }
 			}
 		}
+
+
 		Mat screenshot_before = screenshot.clone();
 		mySeg(screenshot);
 		imshow("screenshot_bef",screenshot_before);
