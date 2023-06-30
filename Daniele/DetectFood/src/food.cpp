@@ -27,6 +27,7 @@ int main(int argc, char **argv) {
 
     // Read template images
     string templateDir = argv[1];
+    cout << "Initializing FeatureComparator..." << endl;
     comparator = FeatureComparator(templateDir);
 
     // Read input image
@@ -37,6 +38,7 @@ int main(int argc, char **argv) {
     imshow("Input", inputImg);
 
     // Add mouse callback
+    cout << "Click first on plate center and then on plate border..." << endl;
     setMouseCallback("Input", onMouse, (void*)&inputImg);
     waitKey(0);
 
@@ -71,19 +73,19 @@ void onMouse(int event, int x, int y, int f, void* userdata) {
             getFoodMask(img, mask, center, radius);
             bitwise_and(img, img, masked, mask);
 
-            // Show output
-            imshow("out", masked);
-            waitKey();
-
-            // Get food label
-            int predlabel = comparator.getFoodLabel(img, mask);
-            cout << "Assigned label: " << LABELS[predlabel] << endl;
-
             // Reset params
             center = Point(-1,-1);
             radius = -1;
 
+            // Show output
+            imshow("out", masked);
+
+            // Get food label
+            int predlabel = comparator.getFoodLabel(img, mask);
+            cout << "Assigned label: " << LABELS[predlabel] << endl;
             cout << endl;
+            
+            waitKey();
         }
     }
 }

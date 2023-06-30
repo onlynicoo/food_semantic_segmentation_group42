@@ -26,7 +26,7 @@ void getFoodMask(Mat src, Mat &mask, Point center, int radius) {
         }
 
     // Fill the holes
-    /*int closingSize = radius / 10;  // Adjust the size as per your requirement
+    int closingSize = radius / 5;  // Adjust the size as per your requirement
     Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(closingSize, closingSize));
-    morphologyEx(mask, mask, MORPH_CLOSE, kernel);*/
+    morphologyEx(mask, mask, MORPH_CLOSE, kernel);
 }
