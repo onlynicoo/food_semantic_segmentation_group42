@@ -2,6 +2,7 @@
 //#define PLATES_FINDER
 
 #include <opencv2/opencv.hpp>
+#include "PlatesFinder.h"
 
 // Declaration of the class PlateFinder
 class Trays {
@@ -32,6 +33,7 @@ class Trays {
     void AddTray(std::string, std::string);
     void FindPlates(const cv::Mat);
 
+    void ElaborateImage(const cv::Mat, cv::Mat[]);
     cv::Mat DetectFoods(const cv::Mat);
     cv::Mat SegmentFoods(const cv::Mat);
     void PrintInfo();

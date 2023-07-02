@@ -16,6 +16,14 @@ cv::Mat Trays::SegmentFoods(cv::Mat src) {
     return out;
 }
 
+void Trays::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2]) {
+    // it contains
+    // image detection | image segmentation
+    tmpDest[0] = src;
+    tmpDest[1] = src;
+    // ... add code ...
+}
+
 Trays::Trays(std::string trayBefore, std::string trayAfter) {
     
     cv::Mat before = cv::imread(trayBefore, cv::IMREAD_COLOR);
@@ -29,12 +37,15 @@ Trays::Trays(std::string trayBefore, std::string trayAfter) {
     traysBefore.push_back(before);
     traysAfter.push_back(after);
 
-    traysBeforeDetected.push_back(DetectFoods(before));
-    traysAfterDetected.push_back(DetectFoods(after));
-
-    traysBeforeSegmented.push_back(SegmentFoods(before));
-    traysBeforeSegmented.push_back(SegmentFoods(after));
+    cv::Mat tmpDest[2];
+    ElaborateImage(before, tmpDest);
+    traysBeforeDetected.push_back(tmpDest[0]);
+    std::cout <<"cisaojdoidosicmsomcasdocmoaksdmcko\n\n\n\n\n\n";
+    traysBeforeSegmented.push_back(tmpDest[1]);
     
+    ElaborateImage(after, tmpDest);
+    traysBeforeDetected.push_back(tmpDest[0]);
+    traysBeforeSegmented.push_back(tmpDest[1]);
 }
 
 void Trays::AddTray(std::string trayBefore, std::string trayAfter) {
@@ -48,12 +59,15 @@ void Trays::AddTray(std::string trayBefore, std::string trayAfter) {
     traysBefore.push_back(before);
     traysAfter.push_back(after);
 
-    traysBeforeDetected.push_back(DetectFoods(before));
-    traysAfterDetected.push_back(DetectFoods(after));
-
-    traysBeforeSegmented.push_back(SegmentFoods(before));
-    traysBeforeSegmented.push_back(SegmentFoods(after));
+    cv::Mat tmpDest[2];
+    ElaborateImage(before, tmpDest);
+    traysBeforeDetected.push_back(tmpDest[0]);
+    traysBeforeSegmented.push_back(tmpDest[1]);
     
+    ElaborateImage(after, tmpDest);
+    traysBeforeDetected.push_back(tmpDest[0]);
+    traysBeforeSegmented.push_back(tmpDest[1]);
+
     traysNumber ++;    
 }
 
