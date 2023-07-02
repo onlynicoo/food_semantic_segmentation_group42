@@ -1,14 +1,11 @@
 
-#include <opencv2/opencv.hpp>
-#include "../include/PlatesFinder.h"
+//#include <opencv2/opencv.hpp>
+#include "PlatesFinder.h"
 
 using namespace cv;
 
 Mat src;
-int imgPerRow = 4;
 const char* window_plates = "src";
-
-//create a class that automatically manage the lines and the various checks
 
 int main( int argc, char** argv )
 {
