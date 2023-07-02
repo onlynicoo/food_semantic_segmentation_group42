@@ -1,6 +1,6 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include "plates.h"
+#include "PlateRemover.h"
 #include "FeatureComparator.h"
 
 using namespace std;
@@ -11,24 +11,30 @@ string LABELS[14] = {
     "4. pasta with clams and mussels", "5. pilaw rice with peppers and peas", "6. grilled pork cutlet",
     "7. fish cutlet", "8. rabbit", "9. seafood salad", "10. beans", "11. basil potatoes", "12. salad", "13. bread"};
 
-string templateDir;
-FeatureComparator comparator;
+vector<int> excludedLabels = {0, 12, 13};
+Mat labelFeatures;
 Point center = Point(-1,-1);
 int radius = -1;
 
 void onMouse(int event, int x, int y, int f, void* userdata);
 
 int main(int argc, char **argv) {
+
     // Read arguments
     if (argc < 3) {
-        cout << "Usage: food <template images dir> <image to label path>" << endl;
+        cout << "Usage: food <label features path> <image to label path>" << endl;
         return 1;
     }
 
     // Read template images
-    string templateDir = argv[1];
-    cout << "Initializing FeatureComparator..." << endl;
-    comparator = FeatureComparator(templateDir);
+    string labelFeaturesPath = argv[1];
+    FileStorage fs(labelFeaturesPath, FileStorage::READ);
+    if (!fs.isOpened()) {
+        cout << "Failed to open label features file." << endl;
+        return -1;
+    }
+    fs["labelFeatures"] >> labelFeatures;
+    fs.release();
 
     // Read input image
     string imgPath = argv[2];
@@ -47,14 +53,9 @@ int main(int argc, char **argv) {
 
 void onMouse(int event, int x, int y, int f, void* userdata) {
     if (event == EVENT_LBUTTONDOWN) {
+
         // Read input image
         Mat img = (*(Mat*)userdata).clone();
-
-        // Print HSV of the pixel
-        /*cvtColor(img, img, COLOR_BGR2HSV);
-        int hsv[3] = {int(img.at<Vec3b>(y, x)[0]), int(img.at<Vec3b>(y, x)[1]), int(img.at<Vec3b>(y, x)[2])};
-        cout << "HSV at pixel (" << x << "," << y << ") = ";
-        cout << "(" << hsv[0] << "," << hsv[1] << "," << hsv[2] << ")\n";*/
         
         if (center.x == -1) {
             // Read center
@@ -64,13 +65,13 @@ void onMouse(int event, int x, int y, int f, void* userdata) {
             // Read radius
             radius = norm(Point(x, y) - center);
             cout << "Radius: " << radius << endl;
-        }                     
+        }
             
         if (center.x != -1 && radius != -1) {
 
             // Get food mask
             Mat mask, masked;
-            getFoodMask(img, mask, center, radius);
+            PlateRemover::getFoodMask(img, mask, center, radius);
             bitwise_and(img, img, masked, mask);
 
             // Reset params
@@ -81,7 +82,8 @@ void onMouse(int event, int x, int y, int f, void* userdata) {
             imshow("out", masked);
 
             // Get food label
-            int predlabel = comparator.getFoodLabel(img, mask);
+            Mat imageFeatures = FeatureComparator::getImageFeatures(img, mask);
+            int predlabel = FeatureComparator::getFoodLabel(labelFeatures, excludedLabels, imageFeatures);
             cout << "Assigned label: " << LABELS[predlabel] << endl;
             cout << endl;
             

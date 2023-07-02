@@ -1,19 +1,18 @@
 #include <opencv2/opencv.hpp>
+#include <PlateRemover.h>
 
 using namespace std;
 using namespace cv;
 
-void preProcessImage(Mat src, Mat &dst) {
-    GaussianBlur(src, dst, Size(5,5), 0);
-    cvtColor(dst, dst, COLOR_BGR2HSV);
-}
+void PlateRemover::getFoodMask(Mat src, Mat &mask, Point center, int radius) {
 
-void getFoodMask(Mat src, Mat &mask, Point center, int radius) {
+    // Pre-process
     Mat img;
-    preProcessImage(src, img);
-    mask = Mat(img.rows, img.cols, CV_8U, Scalar(0));
+    GaussianBlur(src, img, Size(5,5), 0);
+    cvtColor(img, img, COLOR_BGR2HSV);
 
     // Find food mask
+    mask = Mat(img.rows, img.cols, CV_8U, Scalar(0));
     for (int r = max(0, center.y - radius); r < min(center.y + radius + 1, img.rows); r++)
         for (int c = max(0, center.x - radius); c < min(center.x + radius + 1, img.cols); c++) {
             Point cur = Point(c, r);
@@ -26,7 +25,7 @@ void getFoodMask(Mat src, Mat &mask, Point center, int radius) {
         }
 
     // Fill the holes
-    int closingSize = radius / 5;  // Adjust the size as per your requirement
+    int closingSize = radius / 5;
     Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(closingSize, closingSize));
     morphologyEx(mask, mask, MORPH_CLOSE, kernel);
 }

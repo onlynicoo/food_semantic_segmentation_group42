@@ -5,21 +5,23 @@
 using namespace cv;
 using namespace std;
 
-int N_LABELS = 11;
-Size STD_SIZE(256, 256);
+int FeatureComparator::getFoodLabel(Mat labelsFeatures, vector<int> excludedLabels, Mat imgFeatures) {
+    double minDistance = DBL_MAX;
+    int nearestLabelIdx = -1;
+    for (int i = 0; i < labelsFeatures.rows; i++) {
+        
+        // Check if the label is excluded
+        if (find(excludedLabels.begin(), excludedLabels.end(), i) != excludedLabels.end())
+            continue;
 
-FeatureComparator::FeatureComparator() {
-    templateFeatures = Mat();
-}
-
-FeatureComparator::FeatureComparator(string templateDir) {
-    templateFeatures = getTemplateFeatures(templateDir);
-}
-
-int FeatureComparator::getFoodLabel(Mat img, Mat mask) {
-    Mat imgFeatures = getImageFeatures(img, mask);
-    int label = findNearestCenter(templateFeatures, imgFeatures) + 1;
-    return label;
+        Mat curFeatures = labelsFeatures.row(i);
+        double distance = norm(curFeatures, imgFeatures, NORM_L2);
+        if (distance < minDistance) {
+            minDistance = distance;
+            nearestLabelIdx = i;
+        }
+    }
+    return nearestLabelIdx;
 }
 
 Mat FeatureComparator::getHueFeatures(Mat img, Mat mask, int numFeatures) {
@@ -129,118 +131,7 @@ Mat FeatureComparator::getImageFeatures(Mat img, Mat mask) {
     return features;
 }
 
-void FeatureComparator::preProcessTemplateImage(Mat &img, Mat &mask) {
-    // Find bounding box
-    int minHor = INT_MAX, maxHor = INT_MIN, minVer = INT_MAX, maxVer = INT_MIN;
-    for (int r = 0; r < img.rows; r++)
-        for (int c = 0; c < img.cols; c++) {
-            auto& pixel = img.at<Vec4b>(r,c);
-            int alpha = int(pixel[3]);
-            if (alpha == 255) {
-                if (r < minVer)
-                    minVer = r;
-                if (r > maxVer)
-                    maxVer = r;
-                if (c < minHor)
-                    minHor = c;
-                if (c > maxHor)
-                    maxHor = c;
-            }
-        }
-    
-    // Crop image to bounding box
-    img = img(Rect(minHor, minVer, maxHor - minHor, maxVer - minVer));
-
-    // Find mask
-    mask = Mat(img.rows, img.cols, CV_8U, Scalar(0));
-    for (int r = 0; r < img.rows; r++)
-        for (int c = 0; c < img.cols; c++) {
-            auto& pixel = img.at<Vec4b>(r,c);
-            int alpha = int(pixel[3]);
-            if (alpha == 255) {
-                mask.at<int8_t>(r,c) = 255;
-            }
-        }
-
-    resize(img, img, STD_SIZE);
-    resize(mask, mask, STD_SIZE);
-}
-
-int FeatureComparator::getLabelFromImgPath(string path) {
-    string name = path.substr(path.find_last_of('\\') + 1, path.find_last_of(".") - 1 - path.find_last_of('\\'));
-    int label = stoi(name.substr(2, name.find_first_of('_') - 2));
-    return label;
-}
-
-Mat FeatureComparator::getTemplateFeatures(string templateDir) {
-
-    // Read file names
-    vector<String> inputNames;
-    glob(templateDir + "/*.png", inputNames, false);
-    cout << "Input images found: " << inputNames.size() << endl;
-
-    // Skip 12 (salad) and 13 (bread) since they should have been already distinguished
-    for (int i = 0; i < inputNames.size(); i++)
-        if (getLabelFromImgPath(inputNames[i]) > N_LABELS) {
-            inputNames.erase(inputNames.begin() + i);
-            i--;
-        }
-
-    Mat img, mask;
-    int numProcessed = 0;
-    Mat allFeatures;
-    vector<Mat> imagesFeatures(N_LABELS);
-    for (int i = 0; i < inputNames.size(); i++) {
-
-        if (numProcessed != 0 && numProcessed % 100 == 0)
-            cout << numProcessed << " images processed " << endl;
-        
-        //cout << "Processing image: " << inputNames[i] << endl;
-
-        img = imread(inputNames[i], IMREAD_UNCHANGED);
-        preProcessTemplateImage(img, mask);
-
-        Mat features = getImageFeatures(img, mask);
-        Mat* curFeatures = &imagesFeatures[getLabelFromImgPath(inputNames[i]) - 1];
-        if (curFeatures->empty())
-            features.copyTo(*curFeatures);
-        else
-            curFeatures->push_back(features);
-
-        numProcessed++;
-    }
-
-    cout << "Total images processed: " << numProcessed << endl;
-    cout << "Number of features: " << imagesFeatures[0].cols << endl;
-
-    // Compute average features for every class
-    Mat classesFeatures = Mat(N_LABELS, imagesFeatures[0].cols, CV_32F, Scalar(0));
-    for (int i = 0; i < classesFeatures.rows; i++)
-        if (!imagesFeatures[i].empty()) {
-            reduce(imagesFeatures[i], classesFeatures.row(i), 0, REDUCE_AVG);
-        }
-    return classesFeatures;
-}
-
-int FeatureComparator::findNearestCenter(Mat centers, Mat features) {
-    double minDistance = DBL_MAX;
-    int nearestCenterIndex = -1;
-    for (int i = 0; i < centers.rows; i++) {
-        Mat center = centers.row(i);
-        double distance = norm(center, features, cv::NORM_L2);
-        // cout << i + 1 << " " << distance << endl;
-        if (distance < minDistance) {
-            minDistance = distance;
-            nearestCenterIndex = i;
-        }
-    }
-    return nearestCenterIndex;
-}
-
 /*
-    ### NOT USED ###
-*/
-
 Mat getTextureFeatures(Mat img, Mat mask, int numFeatures) {
     // Convert the image to grayscale
     Mat grayImage;
@@ -287,10 +178,10 @@ Mat getSIFTFeatures(Mat img, Mat mask) {
     Mat descriptors;
     sift->detectAndCompute(img, mask, keypoints, descriptors);
 
-    /*cout << "Detected keypoints: " << keypoints.size() << endl;
+    cout << "Detected keypoints: " << keypoints.size() << endl;
     drawKeypoints(cropInputImg, keypoints, outImg);
     imshow("out", outImg);
-    waitKey();*/
+    waitKey();
 
     // Compute mean descriptor vector for the image
     Mat res(1, descriptors.cols, CV_32F, Scalar(0));
@@ -319,3 +210,4 @@ Mat getHistImage(Mat hist) {
     }
     return histImage;
 }
+*/
