@@ -6,51 +6,66 @@ using namespace std;
 using namespace cv;
 
 const int N_LABELS = 14;
-
-int getLabelFromImgPath(string path);
-void preProcessImage(Mat &img, Mat &mask);
+const int N_TRAYS = 8;
+const char* IMG_EXT = ".jpg";
+const char* MASK_EXT = ".png";
+vector<string> trayNames = {"food_image", "leftover1", "leftover2", "leftover3"};
 
 int main(int argc, char **argv) {
 
     // Read arguments
     if (argc < 2) {
-        cout << "You have to pass a dir containing .png images as argument" << endl;
+        cout << "You have to pass a the Food_leftover_dataset dir as argument" << endl;
         return 1;
     }
     string inputDir = argv[1];
 
-    // Read file names
-    vector<String> inputNames;
-    glob(inputDir + "/*.png", inputNames, false);
-    cout << "Input images found: " << inputNames.size() << endl;
+    cout << "Processing images in " + inputDir << endl;
 
     int numProcessed = 0, numFeatures = -1;
     vector<Mat> imagesFeatures(N_LABELS);
-    for (int i = 0; i < inputNames.size(); i++) {
+    for (int i = 0; i < N_TRAYS; i++)
+        for (int j = 0; j < trayNames.size(); j++) {
 
-        Mat img, mask;
-        img = imread(inputNames[i], IMREAD_UNCHANGED);
-        int label = getLabelFromImgPath(inputNames[i]);
+            // Read image and mask
+            string imgName = inputDir + "/tray" + to_string(i + 1) + "/" + trayNames[j] + IMG_EXT;
+            string maskName = inputDir + "/tray" + to_string(i + 1) + "/masks/" + trayNames[j];
+            if (j == 0)
+                maskName += "_mask";
+            maskName += MASK_EXT;
 
-        preProcessImage(img, mask);
-        Mat features = FeatureComparator::getImageFeatures(img, mask);
+            Mat img = imread(imgName, IMREAD_COLOR), mask = imread(maskName, IMREAD_GRAYSCALE);
 
-        if (numFeatures == -1)
-            numFeatures = features.cols;
+            // Read each masked label
+            for (int label = 1; label < N_LABELS; label++) {
 
-        Mat* curFeatures = &imagesFeatures[label];
-        if (curFeatures->empty())
-            features.copyTo(*curFeatures);
-        else
-            curFeatures->push_back(features);
+                Mat labelMask;
+                compare(mask, label, labelMask, CMP_EQ);
 
-        numProcessed++;
-    }
+                if (countNonZero(labelMask) == 0)
+                    continue;
 
-    cout << "Total images processed: " << numProcessed << endl;
+                // If not empty, compute features for the patch
+                Mat features = FeatureComparator::getImageFeatures(img, labelMask);
+
+                if (numFeatures == -1)
+                    numFeatures = features.cols;
+
+                // Add features
+                Mat* curFeatures = &imagesFeatures[label];
+                if (curFeatures->empty())
+                    features.copyTo(*curFeatures);
+                else
+                    curFeatures->push_back(features);
+
+                numProcessed++;
+            }
+        }
+
+    cout << "Total processed patches: " << numProcessed << endl;
     cout << "Number of features: " << numFeatures << endl;
 
-    // Compute average features for every class
+    // Compute average features for every label
     Mat labelFeatures = Mat(N_LABELS, numFeatures, CV_32F, Scalar(0));
     for (int i = 0; i < labelFeatures.rows; i++)
         if (!imagesFeatures[i].empty()) {
@@ -60,44 +75,4 @@ int main(int argc, char **argv) {
     FileStorage fs("label_features.yml", FileStorage::WRITE);
     fs << "labelFeatures" << labelFeatures;
     fs.release();
-}
-
-void preProcessImage(Mat &img, Mat &mask) {
-    // Find bounding box
-    int minHor = INT_MAX, maxHor = INT_MIN, minVer = INT_MAX, maxVer = INT_MIN;
-    for (int r = 0; r < img.rows; r++)
-        for (int c = 0; c < img.cols; c++) {
-            auto& pixel = img.at<Vec4b>(r,c);
-            int alpha = int(pixel[3]);
-            if (alpha == 255) {
-                if (r < minVer)
-                    minVer = r;
-                if (r > maxVer)
-                    maxVer = r;
-                if (c < minHor)
-                    minHor = c;
-                if (c > maxHor)
-                    maxHor = c;
-            }
-        }
-    
-    // Crop image to bounding box
-    img = img(Rect(minHor, minVer, maxHor - minHor, maxVer - minVer));
-
-    // Find mask
-    mask = Mat(img.rows, img.cols, CV_8U, Scalar(0));
-    for (int r = 0; r < img.rows; r++)
-        for (int c = 0; c < img.cols; c++) {
-            auto& pixel = img.at<Vec4b>(r,c);
-            int alpha = int(pixel[3]);
-            if (alpha == 255) {
-                mask.at<int8_t>(r,c) = 255;
-            }
-        }
-}
-
-int getLabelFromImgPath(string path) {
-    string name = path.substr(path.find_last_of('\\') + 1, path.find_last_of(".") - 1 - path.find_last_of('\\'));
-    int label = stoi(name.substr(2, name.find_first_of('_') - 2));
-    return label;
 }
