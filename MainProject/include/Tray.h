@@ -3,6 +3,8 @@
 
 #include <opencv2/opencv.hpp>
 #include "PlatesFinder.h"
+#include "PlateRemover.h"
+#include "FeatureComparator.h"
 
 // Declaration of the class PlateFinder
 class Tray {
@@ -32,7 +34,7 @@ class Tray {
     Tray(std::string, std::string);
     void FindPlates(const cv::Mat);
 
-    void ElaborateImage(const cv::Mat, cv::Mat[]);
+    void ElaborateImage(const cv::Mat, cv::Mat[], std::vector<int>& );
     cv::Mat DetectFoods(const cv::Mat);
     cv::Mat SegmentFoods(const cv::Mat);
 
