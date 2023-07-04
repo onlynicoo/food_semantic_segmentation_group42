@@ -164,7 +164,7 @@ static void CannyThreshold(int, void*) {
         // Resize output to have all images of same size
         resize(output, output, stdSize);
 
-                // Add image to current image row
+        // Add image to current image row
         if (imageRow.empty())
             output.copyTo(imageRow);
         else

@@ -10,7 +10,7 @@ class PlatesFinder {
     // Attributes
 
     // radius parameters to detect plates
-    static const int min_radius_hough_plates = 280;
+    static const const int min_radius_hough_plates = 280;
     static const int max_radius_hough_plates = 300;
     
     // radius parameters to detect salads

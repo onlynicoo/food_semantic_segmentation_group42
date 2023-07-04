@@ -5,32 +5,32 @@
 #include "PlatesFinder.h"
 
 // Declaration of the class PlateFinder
-class Trays {
+class Tray {
 
   private:
     // Attributes
 
     // names of trays
-    std::vector<std::string> traysBeforeNames;
-    std::vector<std::string> traysAfterNames;
+    std::string traysBeforeNames;
+    std::string traysAfterNames;
 
     // mats of trays
-    std::vector<cv::Mat> traysBefore;
-    std::vector<cv::Mat> traysAfter;
+    cv::Mat traysBefore;
+    cv::Mat traysAfter;
 
-    std::vector<cv::Mat> traysBeforeDetected;
-    std::vector<cv::Mat> traysAfterDetected;
+    cv::Mat traysBeforeDetected;
+    cv::Mat traysAfterDetected;
     
-    std::vector<cv::Mat> traysBeforeSegmented;
-    std::vector<cv::Mat> traysAfterSegmented;
+    cv::Mat traysBeforeSegmented;
+    cv::Mat traysAfterSegmented;
     
     // trays number
     int traysNumber;
 
   public:
-    Trays();
-    Trays(std::string, std::string);
-    void AddTray(std::string, std::string);
+    //Tray();
+    Tray(std::string, std::string);
+    //void AddTray(std::string, std::string);
     void FindPlates(const cv::Mat);
 
     void ElaborateImage(const cv::Mat, cv::Mat[]);

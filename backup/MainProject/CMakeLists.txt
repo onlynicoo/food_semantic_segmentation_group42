@@ -13,14 +13,14 @@ add_library(PlatesFinder
     src/PlatesFinder.cpp
 )
 
-add_library(Tray
-    include/Tray.h
+add_library(Trays
+    include/Trays.h
     src/Trays.cpp
 )
 
 
 # link libraries
 target_link_libraries(PlatesFinder ${OpenCV_LIBS})
-target_link_libraries(Tray PlatesFinder)
-target_link_libraries(main Tray)
+target_link_libraries(Trays PlatesFinder)
+target_link_libraries(main Trays)
 

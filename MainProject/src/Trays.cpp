@@ -1,79 +1,92 @@
-#include "../include/Trays.h"
+#include "../include/Tray.h"
 
-Trays::Trays() {
-    traysNumber = 0;
-}
-
-cv::Mat Trays::DetectFoods(cv::Mat src) {
+cv::Mat Tray::DetectFoods(cv::Mat src) {
     cv::Mat out;
     // ... add code to detect food and return an image with bounding boxes
     return out;
 }
 
-cv::Mat Trays::SegmentFoods(cv::Mat src) {
+cv::Mat Tray::SegmentFoods(cv::Mat src) {
     cv::Mat out;
     // ... add code to detect food and return an image with bounding boxes
     return out;
 }
 
-void Trays::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2]) {
+void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2]) {
     // it contains
     // image detection | image segmentation
     
-    tmpDest[0] = src;
+    std::vector<cv::Vec3f> plates = PlatesFinder::get_plates(src);
+    
+
+    tmpDest[0] = PlatesFinder::print_plates_image(src, plates);
+
     tmpDest[1] = src;
     // ... add code ...
 }
 
-Trays::Trays(std::string trayBefore, std::string trayAfter) {
+Tray::Tray(std::string trayBefore, std::string trayAfter) {
     
     cv::Mat before = cv::imread(trayBefore, cv::IMREAD_COLOR);
-    cv::Mat after = cv::imread(trayBefore, cv::IMREAD_COLOR);
+    cv::Mat after = cv::imread(trayAfter, cv::IMREAD_COLOR);
 
     traysNumber = 1;
 
-    traysBeforeNames.push_back(trayBefore);
-    traysAfterNames.push_back(trayAfter);
+    traysBeforeNames = trayBefore;
+    traysAfterNames = trayAfter;
     
-    traysBefore.push_back(before);
-    traysAfter.push_back(after);
+    traysBefore = before;
+    traysAfter = after;
 
     cv::Mat tmpDest[2];
     ElaborateImage(before, tmpDest);
-    traysBeforeDetected.push_back(tmpDest[0]);
-
-    traysBeforeSegmented.push_back(tmpDest[1]);
+    traysBeforeDetected = tmpDest[0];
+    traysBeforeSegmented = tmpDest[1];
     
     ElaborateImage(after, tmpDest);
-    traysBeforeDetected.push_back(tmpDest[0]);
-    traysBeforeSegmented.push_back(tmpDest[1]);
+    traysAfterDetected = tmpDest[0];
+    traysAfterSegmented = tmpDest[1];
 }
 
-void Trays::AddTray(std::string trayBefore, std::string trayAfter) {
+void Tray::PrintInfo() {
+    std::string window_name_before = "info tray";
 
-    cv::Mat before = cv::imread(trayBefore, cv::IMREAD_COLOR);
-    cv::Mat after = cv::imread(trayBefore, cv::IMREAD_COLOR);
+    cv::Mat imageGrid, imageRow;
+    cv::Size stdSize(0,0);
+    stdSize = traysBefore.size();
 
-    traysBeforeNames.push_back(trayBefore);
-    traysAfterNames.push_back(trayAfter);
-    
-    traysBefore.push_back(before);
-    traysAfter.push_back(after);
+    cv::Mat tmp1_1, tmp1_2, tmp1_3, tmp2_1, tmp2_2, tmp2_3; 
+    tmp1_1 = traysBefore.clone();
 
-    cv::Mat tmpDest[2];
-    ElaborateImage(before, tmpDest);
-    traysBeforeDetected.push_back(tmpDest[0]);
-    traysBeforeSegmented.push_back(tmpDest[1]);
-    
-    ElaborateImage(after, tmpDest);
-    traysBeforeDetected.push_back(tmpDest[0]);
-    traysBeforeSegmented.push_back(tmpDest[1]);
+    // Resize output to have all images of same size
+    resize(traysAfter, tmp2_1, stdSize);
+    resize(traysBeforeDetected, tmp1_2, stdSize);
+    resize(traysAfterDetected, tmp2_2, stdSize);
+    resize(traysBeforeSegmented, tmp1_3, stdSize);
+    resize(traysAfterSegmented, tmp2_3, stdSize);
 
-    traysNumber ++;    
-}
 
-void Trays::PrintInfo() {
+    // Add image to current image row
+    tmp2_1.copyTo(imageRow);
+    hconcat(tmp2_2, imageRow, imageRow);
+    hconcat(tmp2_3, imageRow, imageRow);
+    imageRow.copyTo(imageGrid);
+    imageRow.release();
+
+    tmp1_1.copyTo(imageRow);
+    hconcat(tmp1_2, imageRow, imageRow);
+    hconcat(tmp1_3, imageRow, imageRow);
+    vconcat(imageRow, imageGrid, imageGrid);
+    imageRow.release();
+
+    // Resize the full image grid and display it
+    resize(imageGrid, imageGrid, stdSize);
+    imshow(window_name_before, imageGrid);
+
+    cv::waitKey();
     std::cout << "The number of insterted trays is: " << traysNumber << std::endl;
+
+
 }
 
 
