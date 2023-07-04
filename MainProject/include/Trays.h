@@ -36,6 +36,7 @@ class Trays {
     void ElaborateImage(const cv::Mat, cv::Mat[]);
     cv::Mat DetectFoods(const cv::Mat);
     cv::Mat SegmentFoods(const cv::Mat);
+
     void PrintInfo();
 };
 

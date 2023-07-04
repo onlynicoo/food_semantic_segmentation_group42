@@ -2,8 +2,8 @@ project(CV_project)
 find_package(OpenCV REQUIRED)
 include_directories($(OpenCV_INCLUDE_DIRS))
 
-add_executable(detect_plate
-    src/detect_plate.cpp
+add_executable(detect_plates
+    src/detect_plates.cpp
 )
 
 add_library(PlatesFinder
@@ -18,5 +18,5 @@ add_library(PlatesFinder
 
 #target_link_libraries(asd ${OpenCV_LIBS})
 target_link_libraries(PlatesFinder ${OpenCV_LIBS})
-target_link_libraries(detect_plate PlatesFinder)
+target_link_libraries(detect_plates PlatesFinder)
 #target_link_libraries(test_lib ${OpenCV_LIBS})

@@ -1,6 +1,6 @@
 
 //#include <opencv2/opencv.hpp>
-#include "PlatesFinder.h"
+#include "../include/PlatesFinder.h"
 
 using namespace cv;
 

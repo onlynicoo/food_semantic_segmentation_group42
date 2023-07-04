@@ -11,6 +11,7 @@ int main( int argc, char** argv )
     // read the image
     std::string before = argv[1];
     std::string after = argv[2];
+    
     Trays my_trays = Trays(before, after);
     
     my_trays.PrintInfo(); 

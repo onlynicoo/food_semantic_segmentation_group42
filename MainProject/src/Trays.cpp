@@ -19,6 +19,7 @@ cv::Mat Trays::SegmentFoods(cv::Mat src) {
 void Trays::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2]) {
     // it contains
     // image detection | image segmentation
+    
     tmpDest[0] = src;
     tmpDest[1] = src;
     // ... add code ...
@@ -40,7 +41,7 @@ Trays::Trays(std::string trayBefore, std::string trayAfter) {
     cv::Mat tmpDest[2];
     ElaborateImage(before, tmpDest);
     traysBeforeDetected.push_back(tmpDest[0]);
-    std::cout <<"cisaojdoidosicmsomcasdocmoaksdmcko\n\n\n\n\n\n";
+
     traysBeforeSegmented.push_back(tmpDest[1]);
     
     ElaborateImage(after, tmpDest);
