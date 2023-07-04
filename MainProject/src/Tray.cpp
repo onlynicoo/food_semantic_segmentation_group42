@@ -93,18 +93,21 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
         
         // compare the extracted features with the pretrained features
         int foodLabel = FeatureComparator::getFoodLabel(labels, excludedLabels, patchFeatures);
-        labelsFound.push_back(foodLabel);
         std::cout << foodLabel << "\n\n";
         //std::cout << "compared features of patch " << i << "\n";
         //std::cout << "Food label: " << foodLabel << "\n";
 
         if(std::find(std::begin(firstPlatesLabel), std::end(firstPlatesLabel), foodLabel) != std::end(firstPlatesLabel)) {
+            labelsFound.push_back(foodLabel);
             for(int r = 0; r < segmentationMask.rows; r++) {
                 for(int c = 0; c < segmentationMask.cols; c++) {
                     segmentationMask.at<cv::Vec3b>(r,c) = colors[tmpMask.at<uchar>(r,c)*foodLabel];
                 }
-            //segmentationMask += tmpMask*foodLabel;
             }
+        }
+        else {
+            //add refinition of segmentation mask for multifood plates
+            labelsFound.push_back(foodLabel);
         }
     }
     
