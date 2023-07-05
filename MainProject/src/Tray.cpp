@@ -28,7 +28,7 @@ cv::Mat GetTrainedFeatures(std::string labelFeaturesPath) {
 std::map<int, cv::Vec3b> InitColorMap() {
     std::map<int, cv::Vec3b> colors;
     colors[0] = cv::Vec3b{0, 0, 0};  // Black
-    colors[1] = cv::Vec3b{0, 255, 124};  // Red
+    colors[1] = cv::Vec3b{0, 255, 124};  // Green
     colors[2] = cv::Vec3b{0, 0, 255};  // Red
     colors[3] = cv::Vec3b{255, 0, 0};  // Blue
     colors[4] = cv::Vec3b{0, 255, 255};  // Yellow
@@ -74,7 +74,7 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
 
     
     for(int i = 0; i < plates.size(); i++) {
-        //std::cout << "initial i = " << i << "\n";
+        
         cv::Point center;
         int radius;
         center.x = plates[i][0];
@@ -82,22 +82,17 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
         radius = plates[i][2];
 
         cv::Mat tmpMask;
-        //std::cout << "tmpMask created \n";
         
         // remove plates giving only food
         PlateRemover::getFoodMask(src, tmpMask, center, radius);
-        //std::cout << "removed plate " << i << "\n";
-
+        
         // creates the features for the segmented patch
         cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, tmpMask);
-        //std::cout << "got features of patch " << i << "\n";
         
         // compare the extracted features with the pretrained features
         int foodLabel = FeatureComparator::getFoodLabel(labels, excludedLabels, patchFeatures);
-        std::cout << foodLabel << "\n\n";
-        //std::cout << "compared features of patch " << i << "\n";
-        //std::cout << "Food label: " << foodLabel << "\n";
-
+        std::cout << "Plate " << i << " label found: " << i << foodLabel << "\n";
+        
         if(std::find(std::begin(firstPlatesLabel), std::end(firstPlatesLabel), foodLabel) != std::end(firstPlatesLabel)) {
             labelsFound.push_back(foodLabel);
             for(int r = 0; r < segmentationMask.rows; r++) {
@@ -122,8 +117,6 @@ Tray::Tray(std::string trayBefore, std::string trayAfter) {
     cv::Mat before = cv::imread(trayBefore, cv::IMREAD_COLOR);
     cv::Mat after = cv::imread(trayAfter, cv::IMREAD_COLOR);
 
-    traysNumber = 1;
-
     traysBeforeNames = trayBefore;
     traysAfterNames = trayAfter;
     
@@ -133,7 +126,6 @@ Tray::Tray(std::string trayBefore, std::string trayAfter) {
     cv::Mat tmpDest[2];
     std::vector<int> labelsFound;
     ElaborateImage(before, tmpDest, labelsFound);
-    std::cout << "\n\n" << labelsFound.size() << "\n\n"; 
     traysBeforeDetected = tmpDest[0];
     traysBeforeSegmented = tmpDest[1];
     
@@ -177,5 +169,4 @@ void Tray::PrintInfo() {
     imshow(window_name_before, imageGrid);
 
     cv::waitKey();
-    std::cout << "The number of insterted trays is: " << traysNumber << std::endl;
 }

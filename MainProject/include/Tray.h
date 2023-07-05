@@ -26,9 +26,6 @@ class Tray {
     cv::Mat traysBeforeSegmented;
     cv::Mat traysAfterSegmented;
     
-    // trays number
-    int traysNumber;
-
   public:
     
     Tray(std::string, std::string);
