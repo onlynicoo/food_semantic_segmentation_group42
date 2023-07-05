@@ -2,20 +2,17 @@
 #include <opencv2/opencv.hpp>
 #include "../include/FeatureComparator.h"
 
-using namespace cv;
-using namespace std;
-
-int FeatureComparator::getFoodLabel(Mat labelsFeatures, vector<int> excludedLabels, Mat imgFeatures) {
+int FeatureComparator::getFoodLabel(cv::Mat labelsFeatures, std::vector<int> excludedLabels, cv::Mat imgFeatures) {
     double minDistance = DBL_MAX;
     int nearestLabelIdx = -1;
     for (int i = 0; i < labelsFeatures.rows; i++) {
         
         // Check if the label is excluded
-        if (find(excludedLabels.begin(), excludedLabels.end(), i) != excludedLabels.end())
+        if (std::find(excludedLabels.begin(), excludedLabels.end(), i) != excludedLabels.end())
             continue;
 
-        Mat curFeatures = labelsFeatures.row(i);
-        double distance = norm(curFeatures, imgFeatures, NORM_L2);
+        cv::Mat curFeatures = labelsFeatures.row(i);
+        double distance = cv::norm(curFeatures, imgFeatures, cv::NORM_L2);
         if (distance < minDistance) {
             minDistance = distance;
             nearestLabelIdx = i;
@@ -24,46 +21,46 @@ int FeatureComparator::getFoodLabel(Mat labelsFeatures, vector<int> excludedLabe
     return nearestLabelIdx;
 }
 
-Mat FeatureComparator::getHueFeatures(Mat img, Mat mask, int numFeatures) {
+cv::Mat FeatureComparator::getHueFeatures(cv::Mat img, cv::Mat mask, int numFeatures) {
     // Convert to HSV
-    Mat hsvImg;
-    vector<Mat> hsvChannels;
-    cvtColor(img, hsvImg, COLOR_BGR2HSV); 
+    cv::Mat hsvImg;
+    std::vector<cv::Mat> hsvChannels;
+    cv::cvtColor(img, hsvImg, cv::COLOR_BGR2HSV); 
     split(hsvImg, hsvChannels);
 
     // Equalize V channel to enhance color difference
-    Mat valueChannel;
+    cv::Mat valueChannel;
     hsvChannels[2].copyTo(valueChannel, mask);
-    equalizeHist(valueChannel, valueChannel);
+    cv::equalizeHist(valueChannel, valueChannel);
     valueChannel.copyTo(hsvChannels[2], mask);
 
     // Merge back the channels and convert back to BGR
-    Mat modHsvImg, modBgrImg;
-    merge(hsvChannels, modHsvImg);
+    cv::Mat modHsvImg, modBgrImg;
+    cv::merge(hsvChannels, modHsvImg);
 
     // Convert to HSV
-    Mat hueChannel;
-    cvtColor(modHsvImg, hsvImg, COLOR_BGR2HSV);
-    split(hsvImg, hsvChannels);
+    cv::Mat hueChannel;
+    cvtColor(modHsvImg, hsvImg, cv::COLOR_BGR2HSV);
+    cv::split(hsvImg, hsvChannels);
     hueChannel = hsvChannels[0];
     
     // Compute hist
     float range[] = {0, 180};
     const float* histRange[] = {range};
-    Mat hist;
+    cv::Mat hist;
     calcHist(&hueChannel, 1, 0, mask, hist, 1, &numFeatures, histRange);
     
     // Normalize the hist
-    hist /= sum(hist)[0];
+    hist /= cv::sum(hist)[0];
 
     return hist.t();
 }
 
-Mat FeatureComparator::getLBPFeatures(Mat img, Mat mask, int numFeatures) {
+cv::Mat FeatureComparator::getLBPFeatures(cv::Mat img, cv::Mat mask, int numFeatures) {
     // Compute LBP texture features
     int lbp_radius = 1;
     int lbp_neighbors = pow(lbp_radius * 2 + 1, 2) - 1;
-    Mat lbp_image = Mat::zeros(img.size(), CV_8UC1);
+    cv::Mat lbp_image = cv::Mat::zeros(img.size(), CV_8UC1);
 
     for (int y = lbp_radius; y < img.rows - lbp_radius; y++) {
         for (int x = lbp_radius; x < img.cols - lbp_radius; x++) {
@@ -91,7 +88,7 @@ Mat FeatureComparator::getLBPFeatures(Mat img, Mat mask, int numFeatures) {
     // Compute hist
     float range[] = {0, 256};
     const float* histRange[] = {range};
-    Mat hist;
+    cv::Mat hist;
     calcHist(&lbp_image, 1, 0, mask, hist, 1, &numFeatures, histRange);
 
     // Normalize the hist
@@ -100,32 +97,32 @@ Mat FeatureComparator::getLBPFeatures(Mat img, Mat mask, int numFeatures) {
     return hist.t();
 }
 
-Mat FeatureComparator::getCannyLBPFeatures(Mat img, Mat mask, int numFeatures) {
+cv::Mat FeatureComparator::getCannyLBPFeatures(cv::Mat img, cv::Mat mask, int numFeatures) {
 
     // Convert the image to grayscale
-    Mat grayImage;
-    cvtColor(img, grayImage, COLOR_BGR2GRAY);
+    cv::Mat grayImage;
+    cv::cvtColor(img, grayImage, cv::COLOR_BGR2GRAY);
 
     // Blur image
     GaussianBlur(grayImage, grayImage, cv::Size(5, 5), 0);
 
     // Apply Canny edge detection
-    Mat edges;
+    cv::Mat edges;
     int t1 = 50, t2 = 150;
     Canny(grayImage, edges, t1, t2);
 
     return getLBPFeatures(edges, mask, numFeatures);
 }
 
-void FeatureComparator::appendColumns(Mat src, Mat &dst) {
+void FeatureComparator::appendColumns(cv::Mat src, cv::Mat &dst) {
     if (dst.empty())
         dst = src;
     else
-        hconcat(src, dst, dst);
+        cv::hconcat(src, dst, dst);
 }
 
-Mat FeatureComparator::getImageFeatures(Mat img, Mat mask) {
-    Mat features;
+cv::Mat FeatureComparator::getImageFeatures(cv::Mat img, cv::Mat mask) {
+    cv::Mat features;
     appendColumns(0.6 * getHueFeatures(img, mask, 64), features);
     appendColumns(0.4 * getCannyLBPFeatures(img, mask, 64), features);
     return features;
