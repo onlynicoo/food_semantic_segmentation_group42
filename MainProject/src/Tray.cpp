@@ -91,7 +91,7 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
         
         // compare the extracted features with the pretrained features
         int foodLabel = FeatureComparator::getFoodLabel(labels, excludedLabels, patchFeatures);
-        std::cout << "Plate " << i << " label found: " << i << foodLabel << "\n";
+        std::cout << "Plate " << i << " label found: " << foodLabel << "\n";
         
         if(std::find(std::begin(firstPlatesLabel), std::end(firstPlatesLabel), foodLabel) != std::end(firstPlatesLabel)) {
             labelsFound.push_back(foodLabel);
