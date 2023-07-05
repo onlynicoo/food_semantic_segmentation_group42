@@ -28,6 +28,7 @@ cv::Mat GetTrainedFeatures(std::string labelFeaturesPath) {
 std::map<int, cv::Vec3b> InitColorMap() {
     std::map<int, cv::Vec3b> colors;
     colors[0] = cv::Vec3b{0, 0, 0};  // Black
+    colors[1] = cv::Vec3b{0, 255, 124};  // Red
     colors[2] = cv::Vec3b{0, 0, 255};  // Red
     colors[3] = cv::Vec3b{255, 0, 0};  // Blue
     colors[4] = cv::Vec3b{0, 255, 255};  // Yellow
