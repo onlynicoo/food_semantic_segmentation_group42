@@ -48,10 +48,6 @@ std::map<int, cv::Vec3b> InitColorMap() {
 void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int>& labelsFound) {
     // it contains
     // image detection | image segmentation
-    std::string LABELS[14] = {
-        "0. Background", "1. pasta with pesto", "2. pasta with tomato sauce", "3. pasta with meat sauce",
-        "4. pasta with clams and mussels", "5. pilaw rice with peppers and peas", "6. grilled pork cutlet",
-        "7. fish cutlet", "8. rabbit", "9. seafood salad", "10. beans", "11. basil potatoes", "12. salad", "13. bread"};
 
     std::string labelFeaturesPath = "../data/label_features.yml";
     std::vector<int> excludedLabels = {0, 12, 13};
@@ -95,14 +91,13 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
         
         // compare the extracted features with the pretrained features
         int foodLabel = FeatureComparator::getFoodLabel(labels, excludedLabels, patchFeatures);
-        std::cout << "Plate " << i << " label found: " << LABELS[foodLabel] << "\n";
+        std::cout << "Plate " << i << " label found: " << foodLabel << "\n";
         
         if(std::find(std::begin(firstPlatesLabel), std::end(firstPlatesLabel), foodLabel) != std::end(firstPlatesLabel)) {
             labelsFound.push_back(foodLabel);
             for(int r = 0; r < segmentationMask.rows; r++) {
                 for(int c = 0; c < segmentationMask.cols; c++) {
-                    if(tmpMask.at<uchar>(r,c) != 0)
-                        segmentationMask.at<cv::Vec3b>(r,c) = colors[int(tmpMask.at<uchar>(r,c)*foodLabel)];
+                    segmentationMask.at<cv::Vec3b>(r,c) = colors[tmpMask.at<uchar>(r,c)*foodLabel];
                 }
             }
         }
@@ -112,6 +107,7 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
         }
     }
     
+   
     tmpDest[1] = segmentationMask;
     // ... add code ...
 }
@@ -173,6 +169,6 @@ void Tray::PrintInfo() {
     // Resize the full image grid and display it
     resize(imageGrid, imageGrid, stdSize);
     imshow(window_name_before, imageGrid);
-
+    
     cv::waitKey();
 }
