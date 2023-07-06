@@ -45,6 +45,6 @@ void PlateRemover::getFoodMask(cv::Mat src, cv::Mat &mask, cv::Point center, int
     // Create a new mask with only the largest contour
     if (largestContourIndex != -1) {
         mask = cv::Mat::zeros(mask.size(), CV_8UC1);
-        cv::drawContours(mask, contours, largestContourIndex, cv::Scalar(255), cv::FILLED);
+        cv::drawContours(mask, contours, largestContourIndex, cv::Scalar(1), cv::FILLED);
     }
 }
