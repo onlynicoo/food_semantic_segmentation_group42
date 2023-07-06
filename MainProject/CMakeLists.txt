@@ -10,6 +10,10 @@ add_executable(main
     src/main.cpp
 )
 
+add_executable(LabelFeatures
+    src/LabelFeatures.cpp
+)
+
 # Libraries
 add_library(PlatesFinder
     include/PlatesFinder.h
@@ -31,9 +35,10 @@ add_library(FeatureComparator
     src/FeatureComparator.cpp
 )
 
-# link libraries
+# Link libraries
 target_link_libraries(PlatesFinder ${OpenCV_LIBS})
 target_link_libraries(PlateRemover ${OpenCV_LIBS})
 target_link_libraries(FeatureComparator ${OpenCV_LIBS})
 target_link_libraries(Tray PlatesFinder PlateRemover FeatureComparator)
 target_link_libraries(main Tray)
+target_link_libraries(LabelFeatures FeatureComparator)
