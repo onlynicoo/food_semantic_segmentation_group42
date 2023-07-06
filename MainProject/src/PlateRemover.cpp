@@ -26,4 +26,25 @@ void PlateRemover::getFoodMask(cv::Mat src, cv::Mat &mask, cv::Point center, int
     int closingSize = radius / 5;
     cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(closingSize, closingSize));
     morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
+    
+    // Find contours in the mask
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    
+    // Find the contour with the largest area
+    double largestArea = DBL_MIN;
+    int largestContourIndex = -1;
+    for (int i = 0; i < contours.size(); i++) {
+        double area = cv::contourArea(contours[i]);
+        if (area > largestArea) {
+            largestArea = area;
+            largestContourIndex = i;
+        }
+    }
+    
+    // Create a new mask with only the largest contour
+    if (largestContourIndex != -1) {
+        mask = cv::Mat::zeros(mask.size(), CV_8UC1);
+        cv::drawContours(mask, contours, largestContourIndex, cv::Scalar(255), cv::FILLED);
+    }
 }
