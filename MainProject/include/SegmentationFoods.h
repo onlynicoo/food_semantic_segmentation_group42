@@ -1,6 +1,4 @@
-//#ifndef PLATES_FINDER // Header guard to prevent multiple inclusions
-//#define PLATES_FINDER
-
+#pragma once
 #include <opencv2/opencv.hpp>
 
 // Declaration of the class PlateFinder
@@ -37,5 +35,3 @@ class PlatesFinder {
     // Print plates in image
     static cv::Mat print_plates_image(const cv::Mat, const std::vector<cv::Vec3f>);
 };
-
-//#endif // End of header guard
