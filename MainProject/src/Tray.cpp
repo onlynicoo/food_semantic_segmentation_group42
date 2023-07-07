@@ -45,6 +45,73 @@ std::map<int, cv::Vec3b> InitColorMap() {
     return colors;
 }
 
+std::vector<int> findThreeMostFrequent(const std::vector<int>& values) {
+    // Create a frequency map to count the occurrences of each value
+    std::map<int, int> frequencyMap;
+    for (int value : values) {
+        frequencyMap[value]++;
+    }
+
+    // Sort the values based on their frequencies in descending order
+    std::vector<std::pair<int, int>> sortedFreq(frequencyMap.begin(), frequencyMap.end());
+    std::sort(sortedFreq.begin(), sortedFreq.end(),
+              [](const std::pair<int, int>& a, const std::pair<int, int>& b) {
+                  return a.second > b.second;
+              });
+
+    // Extract the three most frequent values
+    std::vector<int> result;
+    for (int i = 0; i < std::min(3, static_cast<int>(sortedFreq.size())); i++) {
+        result.push_back(sortedFreq[i].first);
+    }
+
+    return result;
+}
+
+// Function to get the most frequent value among neighbors
+int getMostFrequentNeighbor(const std::vector<std::vector<int>>& arr, int row, int col) {
+    std::unordered_map<int, int> freqMap;
+    int maxCount = 0;
+    int mostFrequentValue = 0;
+
+    // Iterate over the 8 neighboring cells
+    for (int i = row - 1; i <= row + 1; ++i) {
+        for (int j = col - 1; j <= col + 1; ++j) {
+            // Skip if the indices are out of bounds or the current cell itself
+            if (i < 0 || j < 0 || i >= arr.size() || j >= arr[0].size() || (i == row && j == col))
+                continue;
+
+            int neighborValue = arr[i][j];
+            freqMap[neighborValue]++;
+            int count = freqMap[neighborValue];
+
+            // Update the most frequent value if necessary
+            if (count > maxCount) {
+                maxCount = count;
+                mostFrequentValue = neighborValue;
+            }
+        }
+    }
+
+    return mostFrequentValue;
+}
+
+// Function to create a new array with most frequent neighbors
+std::vector<std::vector<int>> createNewArray(const std::vector<std::vector<int>>& arr) {
+    std::vector<std::vector<int>> newArray(arr.size(), std::vector<int>(arr[0].size()));
+
+    // Iterate over each cell of the original array
+    for (int i = 0; i < arr.size(); ++i) {
+        for (int j = 0; j < arr[0].size(); ++j) {
+            // Get the most frequent neighbor value for the current cell
+            int mostFrequentNeighbor = getMostFrequentNeighbor(arr, i, j);
+            newArray[i][j] = mostFrequentNeighbor;
+        }
+    }
+
+    return newArray;
+}
+
 void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int>& labelsFound) {
     // it contains
     // image detection | image segmentation
@@ -54,16 +121,18 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
         "7. fish cutlet", "8. rabbit", "9. seafood salad", "10. beans", "11. basil potatoes", "12. salad", "13. bread"};
 
     std::string labelFeaturesPath = "../data/label_features.yml";
-    std::vector<int> excludedLabels = {0, 12, 13};
-    if(labelsFound.size() != 0) {
-        for(int i = 0; i < 14; i ++) {
-            if(std::find(std::begin(labelsFound), std::end(labelsFound), i) == std::end(labelsFound)) 
-                if(std::find(std::begin(excludedLabels), std::end(excludedLabels), i) == std::end(excludedLabels))
-                    excludedLabels.push_back(i);
-        }
-    }
 
-    int firstPlatesLabel[] = {1, 2, 3, 4, 5};
+    std::vector<int> firstPlatesLabel{1, 2, 3, 4, 5};
+    std::vector<int> secondPlatesLabel{6, 7, 8, 9, 10, 11};
+
+    std::vector<int> labelWhitelist;
+    if(labelsFound.size() == 0) {
+        labelWhitelist.reserve(firstPlatesLabel.size() + secondPlatesLabel.size());
+        std::copy(firstPlatesLabel.begin(), firstPlatesLabel.end(), std::back_inserter(labelWhitelist));
+        std::copy(secondPlatesLabel.begin(), secondPlatesLabel.end(), std::back_inserter(labelWhitelist));
+    } else {
+        labelWhitelist = std::vector<int>(labelsFound);
+    }
     
     std::map<int, cv::Vec3b> colors = InitColorMap();
 
@@ -95,7 +164,7 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
         // Creates the features for the segmented patch
         cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, tmpMask);
 
-        platesLabelDistances.push_back(FeatureComparator::getLabelDistances(labels, excludedLabels, patchFeatures));
+        platesLabelDistances.push_back(FeatureComparator::getLabelDistances(labels, labelWhitelist, patchFeatures));
     }
 
     // Choose best labels such that if there are more plates, they are one first and one second plate
@@ -124,6 +193,100 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
         else {
             //add refinition of segmentation mask for multifood plates
             labelsFound.push_back(foodLabel);
+
+            std::vector<int> mostFreq;
+
+            cv::Mat tmpMask = platesMasks[i];
+            cv::Rect bbox = cv::boundingRect(tmpMask);
+            cv::Mat croppedMask = tmpMask(bbox).clone();
+            int gridSize = 10;
+            int windowSize = croppedMask.rows / gridSize;
+
+            std::cout << "second plates" << std::endl;
+
+            for (int y = 0; y < croppedMask.rows - windowSize; y += windowSize) {
+                for (int x = 0; x < croppedMask.cols - windowSize; x += windowSize) {
+
+                    cv::Rect windowRect(x, y, windowSize, windowSize);
+                    cv::Mat submask = croppedMask(windowRect).clone();
+
+                    cv::Mat otherMask = cv::Mat::zeros(tmpMask.size(), tmpMask.type());
+                    submask.copyTo(otherMask(bbox)(windowRect));
+
+                    /*cv::Mat masked;
+                    cv::bitwise_and(src, src, masked, otherMask);
+                    cv::imshow("masked", masked);cv::waitKey();*/
+
+                    cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, otherMask);
+                    foodLabel = FeatureComparator::getLabelDistances(labels, secondPlatesLabel, patchFeatures)[0].label;
+                    mostFreq.push_back(foodLabel);
+                    std::cout << foodLabel << " ";
+                }
+            }
+
+            std::cout << std::endl;
+            std::vector<int> three = findThreeMostFrequent(mostFreq);
+            std::cout << three[0] << " " << three[1] << " " << three[2] << std::endl;
+
+            int rows = std::ceil(croppedMask.rows / windowSize), cols = std::ceil(croppedMask.cols / windowSize);
+            std::vector<std::vector<int>> labelMat(rows, std::vector<int> (cols)); 
+
+            std::cout << "three plates" << std::endl;
+
+            for (int y = 0; y < croppedMask.rows - windowSize; y += windowSize) {
+                int row = std::floor(float(y) / float(windowSize));
+                for (int x = 0; x < croppedMask.cols - windowSize; x += windowSize) {
+                    int col = std::floor(float(x) / float(windowSize));
+                    cv::Rect windowRect(x, y, windowSize, windowSize);
+                    cv::Mat submask = croppedMask(windowRect).clone();
+
+                    cv::Mat otherMask = cv::Mat::zeros(tmpMask.size(), tmpMask.type());
+                    submask.copyTo(otherMask(bbox)(windowRect));
+
+                    /*cv::Mat masked;
+                    cv::bitwise_and(src, src, masked, otherMask);
+                    cv::imshow("masked", masked);cv::waitKey();*/
+
+                    cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, otherMask);
+                    foodLabel = FeatureComparator::getLabelDistances(labels, three, patchFeatures)[0].label;
+                    labelMat[row][col] = foodLabel;
+                    std::cout << labelMat[row][col] << " ";
+
+                    for(int r = 0; r < segmentationMask.rows; r++)
+                        for(int c = 0; c < segmentationMask.cols; c++)
+                            if(otherMask.at<uchar>(r,c) != 0)
+                                segmentationMask.at<cv::Vec3b>(r,c) = colors[int(otherMask.at<uchar>(r,c)*foodLabel)];
+                }
+            }
+
+            std::vector<std::vector<int>> second = createNewArray(labelMat);
+
+            std::cout << "median plates" << std::endl;
+
+            for (int y = 0; y < croppedMask.rows - windowSize; y += windowSize) {
+                int row = std::floor(float(y) / float(windowSize));
+                for (int x = 0; x < croppedMask.cols - windowSize; x += windowSize) {
+                    int col = std::floor(float(x) / float(windowSize));
+                    cv::Rect windowRect(x, y, windowSize, windowSize);
+                    cv::Mat submask = croppedMask(windowRect).clone();
+
+                    cv::Mat otherMask = cv::Mat::zeros(tmpMask.size(), tmpMask.type());
+                    submask.copyTo(otherMask(bbox)(windowRect));
+
+                    /*cv::Mat masked;
+                    cv::bitwise_and(src, src, masked, otherMask);
+                    cv::imshow("masked", masked);cv::waitKey();*/
+
+                    foodLabel = second[row][col];
+                    std::cout << second[row][col] << " ";
+
+                    for(int r = 0; r < segmentationMask.rows; r++)
+                        for(int c = 0; c < segmentationMask.cols; c++)
+                            if(otherMask.at<uchar>(r,c) != 0)
+                                segmentationMask.at<cv::Vec3b>(r,c) = colors[int(otherMask.at<uchar>(r,c)*foodLabel)];
+                }
+            }
+
         }
     }
     

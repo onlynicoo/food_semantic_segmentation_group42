@@ -2,12 +2,14 @@
 #include <opencv2/opencv.hpp>
 #include "../include/FeatureComparator.h"
 
-std::vector<FeatureComparator::LabelDistance> FeatureComparator::getLabelDistances(cv::Mat labelsFeatures, std::vector<int> excludedLabels, cv::Mat imgFeatures) {
+std::vector<FeatureComparator::LabelDistance> FeatureComparator::getLabelDistances(
+    cv::Mat labelsFeatures, std::vector<int> labelWhitelist, cv::Mat imgFeatures)
+{
     std::vector<FeatureComparator::LabelDistance> distances;
     for (int i = 0; i < labelsFeatures.rows; i++) {
 
         // Check if the label is excluded
-        if (std::find(excludedLabels.begin(), excludedLabels.end(), i) != excludedLabels.end())
+        if (std::find(labelWhitelist.begin(), labelWhitelist.end(), i) == labelWhitelist.end())
             continue;
 
         double distance = cv::norm(labelsFeatures.row(i), imgFeatures, cv::NORM_L2);
