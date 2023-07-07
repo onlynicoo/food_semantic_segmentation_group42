@@ -67,16 +67,17 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
     
     std::map<int, cv::Vec3b> colors = InitColorMap();
 
-
     cv::Size segmentationMaskSize = src.size();
     cv::Mat segmentationMask(segmentationMaskSize, CV_8UC3, cv::Scalar(0));
 
-
     cv::Mat labels = GetTrainedFeatures(labelFeaturesPath);
     std::vector<cv::Vec3f> plates = PlatesFinder::get_plates(src);
+    plates.resize(std::min(2, (int) plates.size()));                          // Assume there are at most 2 plates
     tmpDest[0] = PlatesFinder::print_plates_image(src, plates);
 
-    
+    std::vector<std::vector<FeatureComparator::LabelDistance>> platesLabelDistances;
+    std::vector<cv::Mat> platesMasks;
+
     for(int i = 0; i < plates.size(); i++) {
         
         cv::Point center;
@@ -87,24 +88,38 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
 
         cv::Mat tmpMask;
         
-        // remove plates giving only food
+        // Remove plates giving only food
         PlateRemover::getFoodMask(src, tmpMask, center, radius);
+        platesMasks.push_back(tmpMask);
         
-        // creates the features for the segmented patch
+        // Creates the features for the segmented patch
         cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, tmpMask);
-        
-        // compare the extracted features with the pretrained features
-        int foodLabel = FeatureComparator::getFoodLabel(labels, excludedLabels, patchFeatures);
+
+        platesLabelDistances.push_back(FeatureComparator::getLabelDistances(labels, excludedLabels, patchFeatures));
+    }
+
+    // Choose best labels such that if there are more plates, they are one first and one second plate
+    if (platesLabelDistances.size() > 1) {
+        while (!(platesLabelDistances[0][0].label >= MIN_FIRST_PLATE_LABEL && platesLabelDistances[0][0].label <= MAX_FIRST_PLATE_LABEL
+                ^ platesLabelDistances[1][0].label >= MIN_FIRST_PLATE_LABEL && platesLabelDistances[1][0].label <= MAX_FIRST_PLATE_LABEL))
+        {
+            if (platesLabelDistances[0][0] < platesLabelDistances[1][0])
+                platesLabelDistances[1].erase(platesLabelDistances[1].begin());
+            else
+                platesLabelDistances[0].erase(platesLabelDistances[0].begin());
+        }
+    }
+
+    for (int i = 0; i < plates.size(); i++) {
+        int foodLabel = platesLabelDistances[i][0].label;
         std::cout << "Plate " << i << " label found: " << LABELS[foodLabel] << "\n";
         
         if(std::find(std::begin(firstPlatesLabel), std::end(firstPlatesLabel), foodLabel) != std::end(firstPlatesLabel)) {
             labelsFound.push_back(foodLabel);
-            for(int r = 0; r < segmentationMask.rows; r++) {
-                for(int c = 0; c < segmentationMask.cols; c++) {
-                    if(tmpMask.at<uchar>(r,c) != 0)
-                        segmentationMask.at<cv::Vec3b>(r,c) = colors[int(tmpMask.at<uchar>(r,c)*foodLabel)];
-                }
-            }
+            for(int r = 0; r < segmentationMask.rows; r++)
+                for(int c = 0; c < segmentationMask.cols; c++)
+                    if(platesMasks[i].at<uchar>(r,c) != 0)
+                        segmentationMask.at<cv::Vec3b>(r,c) = colors[int(platesMasks[i].at<uchar>(r,c)*foodLabel)];
         }
         else {
             //add refinition of segmentation mask for multifood plates

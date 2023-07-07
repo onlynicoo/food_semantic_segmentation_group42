@@ -2,23 +2,22 @@
 #include <opencv2/opencv.hpp>
 #include "../include/FeatureComparator.h"
 
-int FeatureComparator::getFoodLabel(cv::Mat labelsFeatures, std::vector<int> excludedLabels, cv::Mat imgFeatures) {
-    double minDistance = DBL_MAX;
-    int nearestLabelIdx = -1;
+std::vector<FeatureComparator::LabelDistance> FeatureComparator::getLabelDistances(cv::Mat labelsFeatures, std::vector<int> excludedLabels, cv::Mat imgFeatures) {
+    std::vector<FeatureComparator::LabelDistance> distances;
     for (int i = 0; i < labelsFeatures.rows; i++) {
-        
+
         // Check if the label is excluded
         if (std::find(excludedLabels.begin(), excludedLabels.end(), i) != excludedLabels.end())
             continue;
 
-        cv::Mat curFeatures = labelsFeatures.row(i);
-        double distance = cv::norm(curFeatures, imgFeatures, cv::NORM_L2);
-        if (distance < minDistance) {
-            minDistance = distance;
-            nearestLabelIdx = i;
-        }
+        double distance = cv::norm(labelsFeatures.row(i), imgFeatures, cv::NORM_L2);
+        LabelDistance labelDistance;
+        labelDistance.label = i;
+        labelDistance.distance = distance;
+        distances.push_back(labelDistance);
     }
-    return nearestLabelIdx;
+    std::sort(distances.begin(), distances.end());
+    return distances;
 }
 
 cv::Mat FeatureComparator::getHueFeatures(cv::Mat img, cv::Mat mask, int numFeatures) {
