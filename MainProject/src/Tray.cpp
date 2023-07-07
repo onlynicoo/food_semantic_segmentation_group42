@@ -194,6 +194,8 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
             //add refinition of segmentation mask for multifood plates
             labelsFound.push_back(foodLabel);
 
+            std::cout << "Splitting food..." << std::endl;
+
             std::vector<int> mostFreq;
 
             cv::Mat tmpMask = platesMasks[i];
@@ -202,7 +204,7 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
             int gridSize = 10;
             int windowSize = croppedMask.rows / gridSize;
 
-            std::cout << "second plates" << std::endl;
+            //std::cout << "second plates" << std::endl;
 
             for (int y = 0; y < croppedMask.rows - windowSize; y += windowSize) {
                 for (int x = 0; x < croppedMask.cols - windowSize; x += windowSize) {
@@ -220,18 +222,18 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
                     cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, otherMask);
                     foodLabel = FeatureComparator::getLabelDistances(labels, secondPlatesLabel, patchFeatures)[0].label;
                     mostFreq.push_back(foodLabel);
-                    std::cout << foodLabel << " ";
+                    //std::cout << foodLabel << " ";
                 }
             }
 
-            std::cout << std::endl;
+            //std::cout << std::endl;
             std::vector<int> three = findThreeMostFrequent(mostFreq);
-            std::cout << three[0] << " " << three[1] << " " << three[2] << std::endl;
+            //std::cout << three[0] << " " << three[1] << " " << three[2] << std::endl;
 
             int rows = std::ceil(croppedMask.rows / windowSize), cols = std::ceil(croppedMask.cols / windowSize);
             std::vector<std::vector<int>> labelMat(rows, std::vector<int> (cols)); 
 
-            std::cout << "three plates" << std::endl;
+            //std::cout << "three plates" << std::endl;
 
             for (int y = 0; y < croppedMask.rows - windowSize; y += windowSize) {
                 int row = std::floor(float(y) / float(windowSize));
@@ -250,18 +252,13 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
                     cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, otherMask);
                     foodLabel = FeatureComparator::getLabelDistances(labels, three, patchFeatures)[0].label;
                     labelMat[row][col] = foodLabel;
-                    std::cout << labelMat[row][col] << " ";
-
-                    for(int r = 0; r < segmentationMask.rows; r++)
-                        for(int c = 0; c < segmentationMask.cols; c++)
-                            if(otherMask.at<uchar>(r,c) != 0)
-                                segmentationMask.at<cv::Vec3b>(r,c) = colors[int(otherMask.at<uchar>(r,c)*foodLabel)];
+                    //std::cout << labelMat[row][col] << " ";
                 }
             }
 
             std::vector<std::vector<int>> second = createNewArray(labelMat);
 
-            std::cout << "median plates" << std::endl;
+            //std::cout << "median plates" << std::endl;
 
             for (int y = 0; y < croppedMask.rows - windowSize; y += windowSize) {
                 int row = std::floor(float(y) / float(windowSize));
@@ -278,7 +275,7 @@ void Tray::ElaborateImage(const cv::Mat src, cv::Mat tmpDest[2], std::vector<int
                     cv::imshow("masked", masked);cv::waitKey();*/
 
                     foodLabel = second[row][col];
-                    std::cout << second[row][col] << " ";
+                    //std::cout << second[row][col] << " ";
 
                     for(int r = 0; r < segmentationMask.rows; r++)
                         for(int c = 0; c < segmentationMask.cols; c++)
