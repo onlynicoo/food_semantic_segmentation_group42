@@ -18,8 +18,8 @@ class Tray {
         cv::Mat traysBefore;
         cv::Mat traysAfter;
 
-        cv::Mat traysBeforeDetected;
-        cv::Mat traysAfterDetected;
+        std::string traysBeforeDetected;
+        std::string traysAfterDetected;
         
         cv::Mat traysBeforeSegmented;
         cv::Mat traysAfterSegmented;
@@ -28,11 +28,19 @@ class Tray {
         const int MIN_FIRST_PLATE_LABEL = 1;
         const int MAX_FIRST_PLATE_LABEL = 5;
         
+        //
         Tray(std::string, std::string);
+        
+        //
         void FindPlates(const cv::Mat);
-
-        void ElaborateImage(const cv::Mat, cv::Mat[], std::vector<int>& );
+        
+        //
+        cv::Mat SegmentImage(const cv::Mat, std::vector<int>&, std::string);
+        
+        //
         cv::Mat DetectFoods(const cv::Mat);
+        
+        //
         cv::Mat SegmentFoods(const cv::Mat);
 
         void PrintInfo();
