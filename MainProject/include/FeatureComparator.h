@@ -19,6 +19,8 @@ class FeatureComparator {
             }
         };
 
+        static const int NORMALIZE_VALUE = 100;
+
         static cv::Mat getImageFeatures(cv::Mat img, cv::Mat mask);
         static std::vector<LabelDistance> getLabelDistances(cv::Mat labelsFeatures, std::vector<int> labelWhitelist, cv::Mat imgFeatures);
 };

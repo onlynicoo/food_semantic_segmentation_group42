@@ -52,7 +52,7 @@ cv::Mat FeatureComparator::getHueFeatures(cv::Mat img, cv::Mat mask, int numFeat
     calcHist(&hueChannel, 1, 0, mask, hist, 1, &numFeatures, histRange);
     
     // Normalize the hist
-    hist /= cv::sum(hist)[0];
+    cv::normalize(hist, hist, NORMALIZE_VALUE, cv::NORM_L1);
 
     return hist.t();
 }
@@ -93,7 +93,7 @@ cv::Mat FeatureComparator::getLBPFeatures(cv::Mat img, cv::Mat mask, int numFeat
     calcHist(&lbp_image, 1, 0, mask, hist, 1, &numFeatures, histRange);
 
     // Normalize the hist
-    hist /= sum(hist)[0];
+    cv::normalize(hist, hist, NORMALIZE_VALUE, cv::NORM_L1);
     
     return hist.t();
 }
