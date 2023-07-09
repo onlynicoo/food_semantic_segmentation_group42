@@ -375,8 +375,8 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
 std::string ExtractName(std::string imagePath) {
     
     std::string imageName = imagePath.substr(
-        imagePath.find_last_of('\\') + 1,
-        imagePath.find_last_of('.') - 1 - imagePath.find_last_of('\\'));
+        imagePath.find_last_of('/') + 1,
+        imagePath.find_last_of('.') - 1 - imagePath.find_last_of('/'));
 
     return "../output/" + imageName + ".txt";
 }
@@ -395,6 +395,9 @@ Tray::Tray(std::string trayBefore, std::string trayAfter) {
     std::vector<int> labelsFound;
     traysBeforeDetected = ExtractName(trayBefore);
     traysAfterDetected = ExtractName(trayAfter);
+
+    std::cout << traysBeforeDetected << " " << traysAfterDetected << std::endl;
+
     traysBeforeSegmented = SegmentImage(before, labelsFound, traysBeforeDetected);
     traysAfterSegmented = SegmentImage(after, labelsFound,  traysAfterDetected);
 
