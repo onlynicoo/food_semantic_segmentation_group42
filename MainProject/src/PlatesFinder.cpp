@@ -93,7 +93,7 @@ std::vector<cv::Vec3f> PlatesFinder::get_salad(cv::Mat src, bool saladFound = fa
     std::vector<cv::Vec3f> circles_salad;
 
 
-    HoughCircles(src_gray, circles_salad, cv::HOUGH_GRADIENT, 1, src_gray.rows/ratioMinDist, param1, param2, min_radius_hough_salad, max_radius_hough_salad);
+    HoughCircles(src_gray, circles_salad, cv::HOUGH_GRADIENT, 1, src.rows/ratioMinDist, param1, param2, min_radius_hough_salad, max_radius_hough_salad);
     
     if (circles_salad.size() == 1 || !saladFound) {
             return circles_salad;
@@ -102,6 +102,7 @@ std::vector<cv::Vec3f> PlatesFinder::get_salad(cv::Mat src, bool saladFound = fa
     else {
         std::vector<cv::Vec3f> circles_salad_refined;
         HoughCircles(src_gray, circles_salad_refined, cv::HOUGH_GRADIENT, 1, src_gray.rows/ratioMinDist, paramSalad1, paramSalad2, min_radius_hough_salad_refine, max_radius_hough_salad_refine);
+        
         std::vector<cv::Vec3f> toRemove = get_plates(src);
 
         std::vector<cv::Vec3f> actual_plates = circles_salad_refined;
@@ -121,7 +122,6 @@ std::vector<cv::Vec3f> PlatesFinder::get_salad(cv::Mat src, bool saladFound = fa
                 }
             }
         }
-        
         return actual_plates;
     }
 }

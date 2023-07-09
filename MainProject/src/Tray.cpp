@@ -479,8 +479,20 @@ void Tray::PrintInfo() {
 
     // Resize output to have all images of same size
     resize(traysAfter, tmp2_1, stdSize);
-    resize(OverimposeDetection(traysBefore, traysBeforeDetected), tmp1_2, stdSize);
-    resize(OverimposeDetection(traysAfter, traysAfterDetected), tmp2_2, stdSize);
+    // resize(OverimposeDetection(traysBefore, traysBeforeDetected), tmp1_2, stdSize);
+    // resize(OverimposeDetection(traysAfter, traysAfterDetected), tmp2_2, stdSize);
+
+    std::vector<cv::Vec3f> saladBefore = PlatesFinder::get_salad(traysBefore, false);
+    std::vector<cv::Vec3f> saladAfter;
+        saladAfter = PlatesFinder::get_salad(traysAfter, false);
+    if (saladBefore.size() == 0) {
+    }   
+    else {
+        saladAfter = PlatesFinder::get_salad(traysAfter, true);
+    }
+
+    resize(PlatesFinder::print_plates_image(OverimposeDetection(traysBefore, traysBeforeDetected), saladBefore), tmp1_2, stdSize);
+    resize(PlatesFinder::print_plates_image(OverimposeDetection(traysAfter, traysAfterDetected), saladAfter), tmp2_2, stdSize);
     resize(colorBeforeSegmented, tmp1_3, stdSize);
     resize(colorAfterSegmented, tmp2_3, stdSize);
 
