@@ -43,5 +43,8 @@ class Tray {
         //
         cv::Mat SegmentFoods(const cv::Mat);
 
+        //
+        std::string get_traysAfterNames();
+        
         void PrintInfo();
 };

@@ -8,6 +8,11 @@ cv::Mat Tray::DetectFoods(cv::Mat src) {
     return out;
 }
 
+//
+std::string Tray::get_traysAfterNames() {
+    return traysAfterNames;
+}        
+
 cv::Mat Tray::SegmentFoods(cv::Mat src) {
     cv::Mat out;
     // ... add code to detect food and return an image with bounding boxes
@@ -114,22 +119,31 @@ std::vector<std::vector<int>> createNewArray(const std::vector<std::vector<int>>
     return newArray;
 }
 
-void InsertBoundingBox(cv::Mat src, int foodId, std::string filePath, std::ofstream& file) {
-    cv::Mat binaryMask;
-    cv::threshold(src, binaryMask, 0, 255, cv::THRESH_BINARY);
+void InsertBoundingBox(cv::Mat src, std::string filePath) {
+
+    std::ofstream file(filePath, std::ios::trunc); // Open the file in append mode
+
+    for (int i = 1; i < 14; i++) {
+
+        cv::Mat binaryMask = (src == i);        
+        
+        std::vector<std::vector<cv::Point>> contours;
+        cv::findContours(binaryMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+        
+        std::vector<cv::Rect> boundingBoxes;
+        for (size_t i = 0; i < contours.size(); i++) {
+            cv::Rect boundingBox = cv::boundingRect(contours[i]);
+            boundingBoxes.push_back(boundingBox);
+        }
+
+        if (file.is_open() && boundingBoxes.size() > 0) {
+            for (int j = 0; j < boundingBoxes.size(); j++)
+                file << "ID " << i << "; [" << boundingBoxes[j].x << ", " << boundingBoxes[j].y << ", " << boundingBoxes[j].width << ", " << boundingBoxes[j].height << "]\n"; // Write the new line to the file
+        }
+    }
     
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(binaryMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    file.close();
 
-    std::vector<cv::Rect> boundingBoxes;
-    for (size_t i = 0; i < contours.size(); i++) {
-        cv::Rect boundingBox = cv::boundingRect(contours[i]);
-        boundingBoxes.push_back(boundingBox);
-    }
-
-    if (file.is_open() && boundingBoxes.size() > 0) {
-        file << "ID " << foodId << "; [" << boundingBoxes[0].x << ", " << boundingBoxes[0].y << ", " << boundingBoxes[0].width << ", " << boundingBoxes[0].height << "]\n"; // Write the new line to the file
-    }
 }
 
 cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std::string filePath) {
@@ -139,9 +153,6 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
         "0. Background", "1. pasta with pesto", "2. pasta with tomato sauce", "3. pasta with meat sauce",
         "4. pasta with clams and mussels", "5. pilaw rice with peppers and peas", "6. grilled pork cutlet",
         "7. fish cutlet", "8. rabbit", "9. seafood salad", "10. beans", "11. basil potatoes", "12. salad", "13. bread"};
-
-    std::ofstream file(filePath, std::ios::trunc); // Open the file in append mode
-
 
     std::string labelFeaturesPath = "../data/label_features.yml";
 
@@ -206,9 +217,6 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
         int foodLabel = platesLabelDistances[i][0].label;
         std::cout << "Plate " << i << " label found: " << LABELS[foodLabel] << "\n";
         if(std::find(std::begin(firstPlatesLabel), std::end(firstPlatesLabel), foodLabel) != std::end(firstPlatesLabel)) {
-
-            //updates the boundingbox file
-            InsertBoundingBox(platesMasks[i], foodLabel, filePath, file);
 
             //create the segmentation image
             labelsFound.push_back(foodLabel);
@@ -317,8 +325,6 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
         }
     }
 
-    file.close(); // Close the file
-
     return segmentationMask;
 }
 
@@ -356,6 +362,8 @@ Tray::Tray(std::string trayBefore, std::string trayAfter) {
     traysBeforeSegmented = SegmentImage(before, labelsFound, traysBeforeDetected);
     traysAfterSegmented = SegmentImage(after, labelsFound,  traysAfterDetected);
 
+    InsertBoundingBox(traysBeforeSegmented, traysBeforeDetected);
+    InsertBoundingBox(traysAfterSegmented, traysAfterDetected);
 }
 
 cv::Mat SegmentedImageFromMask(cv::Mat src) {
@@ -373,7 +381,8 @@ cv::Mat OverimposeDetection(cv::Mat src, std::string filePath) {
     
     cv::Mat out = src.clone();
     std::map<int, cv::Vec3b> colors = InitColorMap();
-    std::ifstream file(filePath); // Replace with the actual file path
+
+    std::ifstream file(filePath); 
     
     if (file.is_open()) {
         std::string line;
@@ -409,7 +418,7 @@ cv::Mat OverimposeDetection(cv::Mat src, std::string filePath) {
                 bottomRight.y = elements[1] + elements[3];
             }
 
-            cv::rectangle(out, topLeft, bottomRight, colors[foodId], 5);  // Draw the rectangle on the image
+            cv::rectangle(out, topLeft, bottomRight, colors[foodId], 10);  // Draw the rectangle on the image
         }
         
         return out;
