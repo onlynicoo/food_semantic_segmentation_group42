@@ -83,3 +83,30 @@ cv::Mat PlatesFinder::print_plates_image(const cv::Mat src, const std::vector<cv
     }
     return output;
 }
+
+std::vector<cv::Vec3f> PlatesFinder::get_salad(cv::Mat src, bool saladFound = false) {
+
+    cv::Mat src_gray;
+    cv::cvtColor(src, src_gray, cv::COLOR_BGR2GRAY);
+ 
+    // Find the circle
+    std::vector<cv::Vec3f> circles_salad;
+
+
+    HoughCircles(src_gray, circles_salad, cv::HOUGH_GRADIENT, 1, src_gray.rows/ratioMinDist, param1, param2, min_radius_hough_salad, max_radius_hough_salad);
+
+    if (!saladFound) {
+        return circles_salad;
+    }
+    else {
+        if (circles_salad.size() == 0) {
+            std::vector<cv::Vec3f> circles_salad_refined;
+            HoughCircles(src_gray, circles_salad_refined, cv::HOUGH_GRADIENT, 1, src_gray.rows/ratioMinDist, paramSalad1, paramSalad2, min_radius_hough_salad_refine, max_radius_hough_salad_refine);
+            std::cout<<"ci sono circles_salad_refined.size = " << circles_salad_refined.size() << "ok" << std::endl;
+            return circles_salad_refined;
+        }
+        else {
+            return circles_salad;
+        }
+    }
+}

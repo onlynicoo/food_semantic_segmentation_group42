@@ -459,9 +459,8 @@ cv::Mat OverimposeDetection(cv::Mat src, std::string filePath) {
 
             cv::rectangle(out, topLeft, bottomRight, colors[foodId], 10);  // Draw the rectangle on the image
         }
-        
-        return out;
     }
+    return out;
 }
 void Tray::PrintInfo() {
 
@@ -503,4 +502,21 @@ void Tray::PrintInfo() {
     imshow(window_name, imageGrid);
 
     cv::waitKey(0);
+}
+
+
+void Tray::PrintSaladPlate() {
+
+    std::vector<cv::Vec3f> saladBefore = PlatesFinder::get_salad(traysBefore, false);
+    std::vector<cv::Vec3f> saladAfter;
+    if (saladBefore.size() == 0)
+        saladAfter = PlatesFinder::get_salad(traysAfter, false);
+    else 
+        saladAfter = PlatesFinder::get_salad(traysAfter, true);
+
+    cv::imshow("before", PlatesFinder::print_plates_image(traysBefore, saladBefore)); 
+    cv::imshow("after", PlatesFinder::print_plates_image(traysAfter, saladAfter)); 
+    
+    cv::waitKey();
+
 }

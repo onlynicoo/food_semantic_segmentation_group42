@@ -83,3 +83,45 @@ cv::Mat PlatesFinder::print_plates_image(const cv::Mat src, const std::vector<cv
     }
     return output;
 }
+
+std::vector<cv::Vec3f> PlatesFinder::get_salad(cv::Mat src, bool saladFound = false) {
+
+    cv::Mat src_gray;
+    cv::cvtColor(src, src_gray, cv::COLOR_BGR2GRAY);
+ 
+    // Find the circle
+    std::vector<cv::Vec3f> circles_salad;
+
+
+    HoughCircles(src_gray, circles_salad, cv::HOUGH_GRADIENT, 1, src_gray.rows/ratioMinDist, param1, param2, min_radius_hough_salad, max_radius_hough_salad);
+    
+    if (circles_salad.size() == 1 || !saladFound) {
+            return circles_salad;
+    }
+
+    else {
+        std::vector<cv::Vec3f> circles_salad_refined;
+        HoughCircles(src_gray, circles_salad_refined, cv::HOUGH_GRADIENT, 1, src_gray.rows/ratioMinDist, paramSalad1, paramSalad2, min_radius_hough_salad_refine, max_radius_hough_salad_refine);
+        std::vector<cv::Vec3f> toRemove = get_plates(src);
+
+        std::vector<cv::Vec3f> actual_plates = circles_salad_refined;
+
+        if (actual_plates.size() > 1) {
+            // Remove salad circles
+            for (size_t i = 0; i < actual_plates.size(); i++) {
+                for (size_t j = 0; j < toRemove.size(); j++) {
+                    cv::Vec3i s = actual_plates[i];
+                    cv::Vec3i p = toRemove[j];
+                    cv::Point center_salad = cv::Point(s[0], s[1]);
+                    cv::Point center_toRemove = cv::Point(p[0], p[1]);
+                    if (cv::norm(center_toRemove - center_salad) < p[2]) {
+                        std::vector<cv::Vec3f>::iterator it = actual_plates.begin() + i;
+                        actual_plates.erase(it);
+                    }
+                }
+            }
+        }
+        
+        return actual_plates;
+    }
+}

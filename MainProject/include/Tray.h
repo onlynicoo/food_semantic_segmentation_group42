@@ -48,6 +48,9 @@ class Tray {
 
         //
         std::string get_traysAfterNames();
+
+        //
+        void PrintSaladPlate();
         
         void PrintInfo();
 };
