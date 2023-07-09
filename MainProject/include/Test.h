@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
-#include "../include/Tray.h"
 #include <string>
+#include "../include/Tray.h"
 
 class Test {
 
