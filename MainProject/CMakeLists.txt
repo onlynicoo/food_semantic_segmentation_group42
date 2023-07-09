@@ -35,6 +35,11 @@ add_library(FeatureComparator
     src/FeatureComparator.cpp
 )
 
+add_library(MetricsCalculation
+    include/MetricsCalculation.h
+    src/MetricsCalculation.cpp
+)
+
 add_library(Test
     include/Test.h
     src/Test.cpp
@@ -44,7 +49,8 @@ add_library(Test
 target_link_libraries(PlatesFinder ${OpenCV_LIBS})
 target_link_libraries(PlateRemover ${OpenCV_LIBS})
 target_link_libraries(FeatureComparator ${OpenCV_LIBS})
+target_link_libraries(MetricsCalculation${OpenCV_LIBS})
 target_link_libraries(Tray PlatesFinder PlateRemover FeatureComparator)
 target_link_libraries(main Tray)
 target_link_libraries(LabelFeatures FeatureComparator)
-target_link_libraries(Test Tray)
+target_link_libraries(Test Tray MetricsCalculation)
