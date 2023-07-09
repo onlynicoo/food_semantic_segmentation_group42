@@ -67,7 +67,7 @@ std::vector<int> getMostFrequentN(std::vector<int> values, int n) {
     // Get n most frequent values
     std::vector<int> result;
     for (int i = 0; i < std::min(n, (int) sortedFreq.size()); i++) {
-        if (i == n - 1 && i > 0 && sortedFreq[i].second < 0.7 * sortedFreq[i - 1].second)
+        if (i == n - 1 && i > 0 && sortedFreq[i].second < 0.8 * sortedFreq[i - 1].second)
             continue;
         result.push_back(sortedFreq[i].first);
     }
@@ -242,8 +242,8 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
 
             std::cout << "Label found: " << LABELS[foodLabel] << std::endl;
         } else {
-            // We have to split the mask into more foods
 
+            // We have to split the mask into more foods
             std::vector<int> allowedLabels;
             if (labelsFound.empty())
                 allowedLabels = secondPlatesLabel;
@@ -256,14 +256,14 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
             cv::Mat croppedMask = tmpMask(bbox).clone();
 
             // Split mask into a grid of smaller masks
-            int gridSize = 5, windowSize = croppedMask.rows / gridSize;
+            int windowSize = std::min(BIG_WINDOW_SIZE, std::min(croppedMask.rows, croppedMask.cols));
             std::vector<int> gridLabels;
 
-            for (int y = 0; y < croppedMask.rows - windowSize; y += windowSize) {
-                for (int x = 0; x < croppedMask.cols - windowSize; x += windowSize) {
+            for (int y = 0; y < croppedMask.rows; y += windowSize) {
+                for (int x = 0; x < croppedMask.cols; x += windowSize) {
                     
                     // Compute submask
-                    cv::Rect windowRect(x, y, windowSize, windowSize);
+                    cv::Rect windowRect(x, y, std::min(windowSize, croppedMask.cols - x), std::min(windowSize, croppedMask.rows - y));
                     cv::Mat submask = croppedMask(windowRect).clone();
 
                     if (cv::countNonZero(submask) == 0)
@@ -288,22 +288,22 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
             std::cout << std::endl;
 
             // Use smaller submasks for a better segmentation results
-            gridSize = 10;
-            windowSize = croppedMask.rows / gridSize;
+            windowSize = std::min(SMALL_WINDOW_SIZE, std::min(croppedMask.rows, croppedMask.cols));
 
             // Create a matrix of the assigned labels
-            int rows = std::ceil(croppedMask.rows / windowSize), cols = std::ceil(croppedMask.cols / windowSize);
+            int rows = std::ceil(float(croppedMask.rows) / float(windowSize));
+            int cols = std::ceil(float(croppedMask.cols) / float(windowSize));
             std::vector<std::vector<int>> labelMat(rows, std::vector<int> (cols)); 
 
-            for (int y = 0; y < croppedMask.rows - windowSize; y += windowSize) {
+            for (int y = 0; y < croppedMask.rows; y += windowSize) {
                 
                 int row = std::floor(float(y) / float(windowSize));
-                for (int x = 0; x < croppedMask.cols - windowSize; x += windowSize) {
+                for (int x = 0; x < croppedMask.cols; x += windowSize) {
                     
                     int col = std::floor(float(x) / float(windowSize));
 
                     // Compute submask
-                    cv::Rect windowRect(x, y, windowSize, windowSize);
+                    cv::Rect windowRect(x, y, std::min(windowSize, croppedMask.cols - x), std::min(windowSize, croppedMask.rows - y));
                     cv::Mat submask = croppedMask(windowRect).clone();
 
                     cv::Mat curMask = cv::Mat::zeros(tmpMask.size(), tmpMask.type());
@@ -317,27 +317,27 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
             }
 
             // Re-assign labels based also on the neighboring submasks
-            std::vector<std::vector<int>> mostFreqLabelMat = getMostFrequentMatrix(labelMat, 1);
+            labelMat = getMostFrequentMatrix(labelMat, 1);
 
             // Merge together submasks with the same label
             std::vector<cv::Mat> foodMasks(mostFreqLabels.size());
 
-            for (int y = 0; y < croppedMask.rows - windowSize; y += windowSize) {
+            for (int y = 0; y < croppedMask.rows; y += windowSize) {
 
                 int row = std::floor(float(y) / float(windowSize));
-                for (int x = 0; x < croppedMask.cols - windowSize; x += windowSize) {
+                for (int x = 0; x < croppedMask.cols; x += windowSize) {
 
                     int col = std::floor(float(x) / float(windowSize));
 
                     // Compute submask
-                    cv::Rect windowRect(x, y, windowSize, windowSize);
+                    cv::Rect windowRect(x, y, std::min(windowSize, croppedMask.cols - x), std::min(windowSize, croppedMask.rows - y));
                     cv::Mat submask = croppedMask(windowRect).clone();
 
                     cv::Mat curMask = cv::Mat::zeros(tmpMask.size(), tmpMask.type());
                     submask.copyTo(curMask(bbox)(windowRect));
 
                     // Get label
-                    foodLabel = mostFreqLabelMat[row][col];
+                    foodLabel = labelMat[row][col];
                     int index = getIndexInVector(mostFreqLabels, foodLabel);
 
                     // Add to the mask of the corresponding label
@@ -374,20 +374,12 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
 
 std::string ExtractName(std::string imagePath) {
     
-    std::string imageName;
-    bool lastOne = true;
-    for(int i = imagePath.size(); i > 0; i--) {
-        if(imagePath[i] == '/') {
-            if (lastOne == false) {
-                imageName = imagePath.substr(i+1, imagePath.size()-1);
-                break;
-            }
-            lastOne = false;
-        }
-    }
+    std::string imageName = imagePath.substr(
+        imagePath.find_last_of('\\') + 1,
+        imagePath.find_last_of('.') - 1 - imagePath.find_last_of('\\'));
 
-    return "../output/" + imageName.substr(0, imageName.size()-4) + ".txt";
-}  
+    return "../output/" + imageName + ".txt";
+}
 
 Tray::Tray(std::string trayBefore, std::string trayAfter) {
 
@@ -422,7 +414,7 @@ cv::Mat SegmentedImageFromMask(cv::Mat src) {
 }
 
 cv::Mat OverimposeDetection(cv::Mat src, std::string filePath) {
-    
+
     cv::Mat out = src.clone();
     std::map<int, cv::Vec3b> colors = InitColorMap();
 
