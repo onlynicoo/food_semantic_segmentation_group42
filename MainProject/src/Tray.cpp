@@ -385,13 +385,39 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
     return segmentationMask;
 }
 
-std::string ExtractName(std::string imagePath) {
+std::string ExtractTray(std::string imagePath) {
     
+    // Find the penultimate occurrence of '/'
+    size_t lastSlashPos = imagePath.rfind('/');
+    size_t penultimateSlashPos = imagePath.rfind('/', lastSlashPos - 1);
+
+    // Extract the substring between the penultimate and last slash
+    std::string penultimatePath = imagePath.substr(penultimateSlashPos + 1, lastSlashPos - penultimateSlashPos - 1);
+
+
     std::string imageName = imagePath.substr(
         imagePath.find_last_of('/') + 1,
         imagePath.find_last_of('.') - 1 - imagePath.find_last_of('/'));
 
-    return "../output/" + imageName + ".txt";
+    return "../output/" + penultimatePath;
+}
+
+std::string ExtractName(std::string imagePath) {
+
+    std::string imageName = imagePath.substr(
+        imagePath.find_last_of('/') + 1,
+        imagePath.find_last_of('.') - 1 - imagePath.find_last_of('/'));
+
+    return imageName;
+}
+
+//should make bool and check output
+void Tray::SaveSegmentedMask(std::string path, cv::Mat src) {
+
+    std::string filename = "../output/" + ExtractTray(path) + "/" + "masks/" + ExtractName(path) + ".jpg";
+
+    bool success = cv::imwrite(filename, src);
+
 }
 
 Tray::Tray(std::string trayBefore, std::string trayAfter) {
@@ -406,14 +432,18 @@ Tray::Tray(std::string trayBefore, std::string trayAfter) {
     traysAfter = after;
 
     std::vector<int> labelsFound;
-    traysBeforeDetected = ExtractName(trayBefore);
-    traysAfterDetected = ExtractName(trayAfter);
+    traysBeforeDetected = "../output/" + ExtractTray(trayBefore) + "/" + "bounding_boxes/" + ExtractName(trayBefore) + ".txt";
+    traysAfterDetected = "../output/" + ExtractTray(trayAfter) + "/" + "bounding_boxes/" + ExtractName(trayAfter) + ".txt";
 
     traysBeforeSegmented = SegmentImage(before, labelsFound, traysBeforeDetected);
     traysAfterSegmented = SegmentImage(after, labelsFound,  traysAfterDetected);
 
     InsertBoundingBox(traysBeforeSegmented, traysBeforeDetected);
     InsertBoundingBox(traysAfterSegmented, traysAfterDetected);
+
+    SaveSegmentedMask(traysBeforeNames, traysBeforeSegmented);
+    SaveSegmentedMask(traysAfterNames, traysAfterSegmented);
+    
 }
 
 cv::Mat SegmentedImageFromMask(cv::Mat src) {

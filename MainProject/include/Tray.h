@@ -24,6 +24,8 @@ class Tray {
         cv::Mat traysBeforeSegmented;
         cv::Mat traysAfterSegmented;
         
+        void SaveSegmentedMask(std::string, cv::Mat);
+
     public:
         const int SMALL_WINDOW_SIZE = 50;
         const int BIG_WINDOW_SIZE = 325;
