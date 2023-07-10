@@ -33,10 +33,10 @@ int thresholdHigh = 116;
 */
 
 int thresholdValueToChange = 111;
-int thresholdSaturation = 20;
+int thresholdSaturation = 160;
 int thresholdLow = 70;
-int thresholdHigh = 120;
-int thresholdValueCanny = 122;
+int thresholdHigh = 113;
+int thresholdValueCanny = 115;
 
 
 Mat enhance(Mat src){
@@ -94,82 +94,6 @@ void callBackFunc(int, void*) {
             circle(maskedImage, center, radius*1.4, cv::Scalar(0,0,0), cv::FILLED);
         }
 
-
-
-
-        /*
-        // Apply Canny edge detection
-        cv::Mat gray;
-        cv::cvtColor(maskedImage, gray, cv::COLOR_BGR2GRAY);
-        cv::Mat edges;
-        int t1 = 50, t2 = 150;
-        cv::Canny(gray, edges, t1, t2);
-
-        //cv::Mat matrix(5, 5, CV_32SC1, cv::Scalar(1));
-
-        cv::Mat kernel = (cv::Mat_<float>(11, 11, 1))/(11*11);
-        
-        // Apply the sliding kernel using filter2D
-        cv::Mat result;
-        cv::filter2D(edges, result, -1, kernel);
-
-        // Threshold the result image
-        cv::Mat thresholded;
-        double thresholdValue = 4*255/11;//90;
-        double maxValue = 255;
-        cv::threshold(result, thresholded, thresholdValue, maxValue, cv::THRESH_BINARY);
-
-
-        // Define the structuring element for morphological operation
-        cv::Mat kernelclosure = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(11, 11));
-
-        // Perform morphological closure
-        cv::Mat resultclosure;
-        cv::morphologyEx(thresholded, resultclosure, cv::MORPH_CLOSE, kernelclosure);
-
-
-        cv::Mat labImage;
-        cv::cvtColor(maskedImage, labImage, cv::COLOR_BGR2Lab);
-
-        // Split LAB channels
-        std::vector<cv::Mat> labChannels;
-        cv::split(labImage, labChannels);
-
-        // Apply histogram equalization to the L channel
-        cv::equalizeHist(labChannels[0], labChannels[0]);
-
-        // Merge LAB channels back
-        cv::merge(labChannels, labImage);
-
-        // Convert image back to BGR color space
-        cv::Mat enhancedImage;
-        cv::cvtColor(labImage, enhancedImage, cv::COLOR_Lab2BGR);
-        imshow("src nothing", src);
-        Mat tmpBlur;
-        blur(src, tmpBlur, cv::Size(5,5));
-        blur(tmpBlur, tmpBlur, cv::Size(5,5));
-        blur(tmpBlur, tmpBlur, cv::Size(5,5));
-        imshow("src blur", tmpBlur);
-        imshow("tmp enhanced", enhancedImage);
-        
-        // Convert image to grayscale
-        cv::Mat grayscaleImage;
-        cv::cvtColor(enhancedImage, grayscaleImage, cv::COLOR_BGR2GRAY);
-
-        // Apply adaptive thresholding
-        cv::Mat thresholdedenhanced;
-        cv::adaptiveThreshold(grayscaleImage, thresholdedenhanced, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 11, 2);
-
-        // Perform morphological operations to remove small shadows
-        cv::Mat kernelenhanced = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7));
-        cv::morphologyEx(thresholded, thresholdedenhanced, cv::MORPH_OPEN, kernelenhanced);
-
-        // Apply bitwise AND operation to remove shadows from the enhanced image
-        cv::Mat shadowRemoved;
-        cv::bitwise_and(enhancedImage, enhancedImage, shadowRemoved, thresholdedenhanced);
-
-        */
-
         // Convert image to YUV color space
         cv::Mat yuvImage;
         cv::cvtColor(maskedImage, yuvImage, cv::COLOR_BGR2YUV);
@@ -177,7 +101,6 @@ void callBackFunc(int, void*) {
         // Access and process the Y, U, and V channels separately
         std::vector<cv::Mat> yuvChannels;
         cv::split(yuvImage, yuvChannels);
-
 
         // Create a binary mask of pixels within the specified range
         cv::Mat mask;
@@ -188,7 +111,7 @@ void callBackFunc(int, void*) {
         cv::bitwise_and(yuvChannels[1], yuvChannels[1], resultyuv, mask);
 
 
-            // Define the structuring element for morphological operation
+        // Define the structuring element for morphological operation
         cv::Mat kernelclosure = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(11, 11));
 
         // Perform morphological closure
@@ -218,9 +141,6 @@ void callBackFunc(int, void*) {
         cv::Mat largestComponentMask = (labels == largestComponent);
 
 
-
-
-
         cv::Mat kernel = (cv::Mat_<float>(51, 51, 1))/(45*45);
         
         // Apply the sliding kernel using filter2D
@@ -239,10 +159,57 @@ void callBackFunc(int, void*) {
         cv::Mat resultlargestComponents;
         cv::bitwise_and(src, src, resultlargestComponents, thresholdedLargestComponentMask);
 
-        /* not bad but to improve
-            // Convert image to HSV color space
+
+
+        // Apply Canny edge detection
+        cv::Mat gray;
+        cv::cvtColor(resultlargestComponents, gray, cv::COLOR_BGR2GRAY);
+        cv::Mat edges;
+        int t1 = 50, t2 = 150;
+        cv::Canny(gray, edges, t1, t2);
+
+
+        cv::Mat kernelCanny = (cv::Mat_<float>(7, 7, 1))/(7*7);
+        
+        // Apply the sliding kernel using filter2D
+        cv::Mat resultCanny;
+        cv::filter2D(edges, result, -1, kernelCanny);
+
+        // Threshold the result image
+        cv::Mat thresholdedCanny;
+        double maxValueCanny = 255;
+        cv::threshold(result, thresholdedCanny, thresholdValueCanny, maxValue, cv::THRESH_BINARY);
+        
+        // Define the structuring element for closing operation
+        int kernelSizeDilation = 3; // Adjust the size according to your needs
+        int kernelSizeClosing = 5; // Adjust the size according to your needs
+        int kernelSizeErosion = 3; // Adjust the size according to your needs
+        cv::Mat kernelDilation = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSizeDilation, kernelSizeDilation));
+        cv::Mat kernelClosing = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSizeClosing, kernelSizeClosing));
+        cv::Mat kernelErosion = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSizeErosion, kernelSizeErosion));
+
+        // Perform dilation followed by erosion (closing operation)
+        cv::Mat closedImage;
+        cv::morphologyEx(thresholdedCanny, closedImage, cv::MORPH_DILATE, kernelDilation, cv::Point(1, 1), 10);
+        cv::morphologyEx(closedImage, closedImage, cv::MORPH_CLOSE, kernelClosing, cv::Point(1, 1), 4);
+
+        
+
+
+        cv::morphologyEx(closedImage, closedImage, cv::MORPH_ERODE, kernelErosion, cv::Point(1, 1), 6);
+
+        cv::morphologyEx(closedImage, closedImage, cv::MORPH_DILATE, kernelDilation, cv::Point(1, 1), 20);
+
+
+        // Apply the mask to the original image
+        cv::Mat res;
+        cv::bitwise_and(src, src, res, closedImage);
+
+
+        //not bad but to improve
+        // Convert image to HSV color space
         cv::Mat hsvImage;
-        cv::cvtColor(resultlargestComponents, hsvImage, cv::COLOR_BGR2HSV);
+        cv::cvtColor(res, hsvImage, cv::COLOR_BGR2HSV);
 
             // Split HSV channels
         std::vector<cv::Mat> hsvChannels;
@@ -257,82 +224,29 @@ void callBackFunc(int, void*) {
         // Threshold the result image
         cv::Mat thresholdedSaturation;
         cv::Mat saturationMask;
-        
+        thresholdSaturation = 140;
         cv::threshold(saturationChannel, thresholdedSaturation, thresholdSaturation, 255 , cv::THRESH_BINARY);
         cv::threshold(saturationChannel, saturationMask, 1, 255 , cv::THRESH_BINARY);
 
+        cv::Mat newMask = saturationMask - thresholdedSaturation;
+
+        cv::morphologyEx(newMask, newMask, cv::MORPH_ERODE, kernelErosion, cv::Point(1, 1), 1);
+        cv::morphologyEx(newMask, newMask, cv::MORPH_DILATE, kernelErosion, cv::Point(1, 1), 6);
+        
 
 
         // Apply the mask to the original image
         cv::Mat resultsaturation;
-        cv::bitwise_and(src, src, resultsaturation, saturationMask-thresholdedSaturation);
-        */
-
-
-       /* bad
-        // Convert image from BGR to CIELab color space
-        cv::Mat labImage;
-        cv::cvtColor(resultlargestComponents, labImage, cv::COLOR_BGR2Lab);
-
-        // Split Lab channels
-        std::vector<cv::Mat> labChannels;
-        cv::split(labImage, labChannels);
-
-        // Access and process the L, a, and b channels separately
-        cv::Mat lChannel = labChannels[0];
-        cv::Mat aChannel = labChannels[1];
-        cv::Mat bChannel = labChannels[2];
-
-        // Enhance differences in the a and b channels
-        cv::Mat enhancedA, enhancedB;
-        cv::equalizeHist(labChannels[1], enhancedA);
-        cv::equalizeHist(labChannels[2], enhancedB);
-        */
-
-
-
-
-        // Apply Canny edge detection
-        cv::Mat gray;
-        cv::cvtColor(resultlargestComponents, gray, cv::COLOR_BGR2GRAY);
-        cv::Mat edges;
-        int t1 = 50, t2 = 150;
-        cv::Canny(gray, edges, t1, t2);
-
-
-        cv::Mat kernelCanny = (cv::Mat_<float>(5, 5, 1))/(5*5);
         
-        // Apply the sliding kernel using filter2D
-        cv::Mat resultCanny;
-        cv::filter2D(edges, result, -1, kernelCanny);
-
-        // Threshold the result image
-        cv::Mat thresholdedCanny;
-        double maxValueCanny = 255;
-        cv::threshold(result, thresholdedCanny, thresholdValueCanny, maxValue, cv::THRESH_BINARY);
+        cv::bitwise_and(src, src, resultsaturation, newMask);
         
-            // Define the structuring element for closing operation
-        int kernelSizeDilation = 3; // Adjust the size according to your needs
-        int kernelSizeClosing = 7; // Adjust the size according to your needs
-        cv::Mat kernelDilation = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSizeDilation, kernelSizeDilation));
-        cv::Mat kernelClosing = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSizeClosing, kernelSizeClosing));
-
-        // Perform dilation followed by erosion (closing operation)
-        cv::Mat closedImage;
-        cv::morphologyEx(thresholdedCanny, closedImage, cv::MORPH_DILATE, kernelClosing, cv::Point(1, 1), 3);
-        cv::morphologyEx(closedImage, closedImage, cv::MORPH_CLOSE, kernelClosing, cv::Point(1, 1), 3);
-
 
         
-        // Apply the mask to the original image
-        cv::Mat resultDilation;
-        cv::bitwise_and(src, src, resultDilation, closedImage);
+        
 
 
 
-
-
-        cv::Mat output = resultDilation;
+        cv::Mat output = resultsaturation;
 
         // Resize output to have all images of same size
         cv::resize(output, output, stdSize);
@@ -351,12 +265,6 @@ void callBackFunc(int, void*) {
                 vconcat(imageRow, imageGrid, imageGrid);
             imageRow.release();
         }
-
-
-
-
-
-
     }
     cv::imshow(window_plates, imageGrid);   
     cv::waitKey();
@@ -371,6 +279,7 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata) {
     std::cout << "thresholdHigh = " << thresholdHigh << std::endl;
     std::cout << "thresholdLow = " << thresholdLow << std::endl;
     std::cout << "thresholdValueToChange = " << thresholdValueToChange << std::endl;
+    std::cout << "thresholdValueCanny = " << thresholdValueCanny << std::endl;
   }
 }
  
@@ -404,11 +313,7 @@ int main( int argc, char** argv )
 
 
 
-    createTrackbar( "Min Threshold:", window_plates, &lowThreshold, max_lowThreshold, callBackFunc );
-    createTrackbar( "param1:", window_plates, &param1, 300, callBackFunc);
-    createTrackbar( "param2:", window_plates, &param2, 300, callBackFunc);
-    createTrackbar( "min_radius:", window_plates, &min_radius_hough_plates, 1000, callBackFunc);
-    createTrackbar( "max_radius:", window_plates, &max_radius_hough_plates, 1000, callBackFunc);
+
     createTrackbar( "saturaration:", window_plates, &thresholdSaturation, 255, callBackFunc);
     createTrackbar( "canny:", window_plates, &thresholdValueCanny, 255, callBackFunc);
     createTrackbar( "thresholdLow:", window_plates, &thresholdLow, 255, callBackFunc);

@@ -26,6 +26,8 @@ class Tray {
         
         void SaveSegmentedMask(std::string, cv::Mat);
 
+        cv::Mat SegmentBread(cv::Mat);
+
     public:
         const int SMALL_WINDOW_SIZE = 50;
         const int BIG_WINDOW_SIZE = 325;
@@ -40,9 +42,6 @@ class Tray {
         cv::Mat SegmentImage(const cv::Mat, std::vector<int>&, std::string);
         
         //
-        cv::Mat DetectFoods(const cv::Mat);
-        
-        //
         cv::Mat SegmentFoods(const cv::Mat);
 
         //
@@ -52,4 +51,6 @@ class Tray {
         void PrintSaladPlate();
         
         void PrintInfo();
+
+        
 };

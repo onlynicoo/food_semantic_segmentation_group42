@@ -2,12 +2,6 @@
 #include <iostream>
 #include <fstream>
 
-cv::Mat Tray::DetectFoods(cv::Mat src) {
-    cv::Mat out;
-    // ... add code to detect food and return an image with bounding boxes
-    return out;
-}
-
 //
 std::string Tray::get_traysAfterNames() {
     return traysAfterNames;
@@ -379,6 +373,11 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
         }
     }
 
+    cv::Mat breadMask = SegmentBread(src);
+    for(int r = 0; r < breadMask.rows; r++)
+        for(int c = 0; c < breadMask.cols; c++)
+            if(segmentationMask.at<uchar>(r,c) == 0)
+                segmentationMask.at<uchar>(r,c) = breadMask.at<uchar>(r,c);
     // Keep labels found
     labelsFound = platesLabels;
 
@@ -420,6 +419,8 @@ void Tray::SaveSegmentedMask(std::string path, cv::Mat src) {
 
 }
 
+
+// constructor that does everything
 Tray::Tray(std::string trayBefore, std::string trayAfter) {
 
     cv::Mat before = cv::imread(trayBefore, cv::IMREAD_COLOR);
@@ -503,6 +504,182 @@ cv::Mat OverimposeDetection(cv::Mat src, std::string filePath) {
     }
     return out;
 }
+
+cv::Mat Tray::SegmentBread(cv::Mat src) {
+
+    // used as base img
+    cv::Mat maskedImage = src.clone();
+
+    std::vector<cv::Vec3f> plates = PlatesFinder::get_plates(src);
+    std::vector<cv::Vec3f> salad = PlatesFinder::get_salad(src, true);
+
+    // Draw the circle
+    for( size_t i = 0; i < plates.size(); i++ ) {
+        cv::Vec3i c = plates[i];
+        cv::Point center = cv::Point(c[0], c[1]);
+        // circle outline
+        int radius = c[2];
+        circle(maskedImage, center, radius*1, cv::Scalar(0,0,0), cv::FILLED);
+    }
+
+    // Draw the circle
+    for( size_t i = 0; i < salad.size(); i++ ) {
+        cv::Vec3i c = salad[i];
+        cv::Point center = cv::Point(c[0], c[1]);
+        // circle outline
+        int radius = c[2];
+        circle(maskedImage, center, radius*1.4, cv::Scalar(0,0,0), cv::FILLED);
+    }
+
+    // Convert image to YUV color space
+    cv::Mat yuvImage;
+    cv::cvtColor(maskedImage, yuvImage, cv::COLOR_BGR2YUV);
+
+    // Access and process the Y, U, and V channels separately
+    std::vector<cv::Mat> yuvChannels;
+    cv::split(yuvImage, yuvChannels);
+
+    // Create a binary mask of pixels within the specified range
+    cv::Mat mask;
+    // Put this in .h file
+    int thresholdLow = 70;
+    int thresholdHigh = 113;
+    cv::inRange(yuvChannels[1], thresholdLow, thresholdHigh, mask);
+
+    // Apply the mask to the original image
+    cv::Mat resultyuv;
+    cv::bitwise_and(yuvChannels[1], yuvChannels[1], resultyuv, mask);
+
+
+    // Define the structuring element for morphological operation
+    cv::Mat kernelclosure = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(11, 11));
+
+    // Perform morphological closure
+    cv::Mat resultclosure;
+    cv::morphologyEx(resultyuv, resultclosure, cv::MORPH_CLOSE, kernelclosure);
+    
+
+    // Perform connected component analysis
+    cv::Mat labels, stats, centroids;
+    int numComponents = cv::connectedComponentsWithStats(resultclosure, labels, stats, centroids);
+
+    // Find the connected component with the largest area
+    int largestComponent = 0;
+    int largestArea = 0;
+    for (int i = 1; i < numComponents; ++i) {
+        int area = stats.at<int>(i, cv::CC_STAT_AREA);
+        if (area > largestArea) {
+            largestArea = area;
+            largestComponent = i;
+        }
+    }
+
+    // Create a binary mask for the largest component
+    cv::Mat largestComponentMask = (labels == largestComponent);
+
+    cv::Mat kernel = (cv::Mat_<float>(51, 51, 1))/(45*45);
+    
+    // Apply the sliding kernel using filter2D
+    cv::Mat result;
+    cv::filter2D(largestComponentMask, result, -1, kernel);
+
+    // Threshold the result image
+    cv::Mat thresholdedLargestComponentMask;
+    double maxValue = 255;
+
+    // put this in .h file
+    int thresholdValueToChange = 111;
+    cv::threshold(result, thresholdedLargestComponentMask, thresholdValueToChange, maxValue, cv::THRESH_BINARY);
+
+
+
+    
+    // Apply the mask to the original image
+    cv::Mat resultlargestComponents;
+    cv::bitwise_and(src, src, resultlargestComponents, thresholdedLargestComponentMask);
+
+
+    // Apply Canny edge detection
+    cv::Mat gray;
+    cv::cvtColor(resultlargestComponents, gray, cv::COLOR_BGR2GRAY);
+    cv::Mat edges;
+    int t1 = 50, t2 = 150;
+    cv::Canny(gray, edges, t1, t2);
+
+
+    cv::Mat kernelCanny = (cv::Mat_<float>(7, 7, 1))/(7*7);
+    
+    // Apply the sliding kernel using filter2D
+    cv::Mat resultCanny;
+    cv::filter2D(edges, result, -1, kernelCanny);
+
+    // Threshold the result image
+    cv::Mat thresholdedCanny;
+    double maxValueCanny = 255;
+
+    // put this in .h file
+    int thresholdValueCanny = 115;
+    cv::threshold(result, thresholdedCanny, thresholdValueCanny, maxValue, cv::THRESH_BINARY);
+    
+    // Define the structuring element for closing operation
+    int kernelSizeDilation = 3; // Adjust the size according to your needs
+    int kernelSizeClosing = 5; // Adjust the size according to your needs
+    int kernelSizeErosion = 3; // Adjust the size according to your needs
+    cv::Mat kernelDilation = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSizeDilation, kernelSizeDilation));
+    cv::Mat kernelClosing = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSizeClosing, kernelSizeClosing));
+    cv::Mat kernelErosion = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSizeErosion, kernelSizeErosion));
+
+    // Perform dilation followed by erosion (closing operation)
+    cv::Mat closedImage;
+    cv::morphologyEx(thresholdedCanny, closedImage, cv::MORPH_DILATE, kernelDilation, cv::Point(1, 1), 10);
+    cv::morphologyEx(closedImage, closedImage, cv::MORPH_CLOSE, kernelClosing, cv::Point(1, 1), 4);
+
+    
+
+
+    cv::morphologyEx(closedImage, closedImage, cv::MORPH_ERODE, kernelErosion, cv::Point(1, 1), 6);
+
+    cv::morphologyEx(closedImage, closedImage, cv::MORPH_DILATE, kernelDilation, cv::Point(1, 1), 20);
+
+
+    // Apply the mask to the original image
+    cv::Mat res;
+    cv::bitwise_and(src, src, res, closedImage);
+
+
+    //not bad but to improve
+    // Convert image to HSV color space
+    cv::Mat hsvImage;
+    cv::cvtColor(res, hsvImage, cv::COLOR_BGR2HSV);
+
+        // Split HSV channels
+    std::vector<cv::Mat> hsvChannels;
+    cv::split(hsvImage, hsvChannels);
+
+    // Access and process the H, S, and V channels separately
+    cv::Mat hueChannel = hsvChannels[0];
+    cv::Mat saturationChannel = hsvChannels[1];
+    cv::Mat valueChannel = hsvChannels[2];
+
+
+    // Threshold the result image
+    cv::Mat thresholdedSaturation;
+    cv::Mat saturationMask;
+    //put this in .h file
+    int thresholdSaturation = 140;
+    cv::threshold(saturationChannel, thresholdedSaturation, thresholdSaturation, 255 , cv::THRESH_BINARY);
+    cv::threshold(saturationChannel, saturationMask, 1, 255 , cv::THRESH_BINARY);
+
+    cv::Mat newMask = saturationMask - thresholdedSaturation;
+
+    cv::morphologyEx(newMask, newMask, cv::MORPH_ERODE, kernelErosion, cv::Point(1, 1), 1);
+    cv::morphologyEx(newMask, newMask, cv::MORPH_DILATE, kernelErosion, cv::Point(1, 1), 6);
+        
+    cv::Mat out = (newMask/255)*13;
+
+    return out;
+}
+
 void Tray::PrintInfo() {
 
     std::string window_name = "info tray";
