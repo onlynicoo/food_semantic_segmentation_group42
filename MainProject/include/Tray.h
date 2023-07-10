@@ -25,11 +25,8 @@ class Tray {
         cv::Mat traysAfterSegmented;
         
     public:
-        const int MIN_FIRST_PLATE_LABEL = 1;
-        const int MAX_FIRST_PLATE_LABEL = 5;
-
         const int SMALL_WINDOW_SIZE = 50;
-        const int BIG_WINDOW_SIZE = 100;
+        const int BIG_WINDOW_SIZE = 325;
         
         //
         Tray(std::string, std::string);
