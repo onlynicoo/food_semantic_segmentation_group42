@@ -128,9 +128,15 @@ void InsertBoundingBox(cv::Mat src, std::string filePath) {
 
     for (int i = 1; i < 14; i++) {
 
-        cv::Mat binaryMask = (src == i);        
+        cv::Mat binaryMask = (src == i);   
+
+        if (cv::countNonZero(binaryMask) == 0)
+            continue;
+
+        cv::Rect bbox = cv::boundingRect(binaryMask);
+        file << "ID " << i << "; [" << bbox.x << ", " << bbox.y << ", " << bbox.width << ", " << bbox.height << "]\n"; // Write the new line to the file
         
-        std::vector<std::vector<cv::Point>> contours;
+        /*std::vector<std::vector<cv::Point>> contours;
         cv::findContours(binaryMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
         
         std::vector<cv::Rect> boundingBoxes;
@@ -142,7 +148,7 @@ void InsertBoundingBox(cv::Mat src, std::string filePath) {
         if (file.is_open() && boundingBoxes.size() > 0) {
             for (int j = 0; j < boundingBoxes.size(); j++)
                 file << "ID " << i << "; [" << boundingBoxes[j].x << ", " << boundingBoxes[j].y << ", " << boundingBoxes[j].width << ", " << boundingBoxes[j].height << "]\n"; // Write the new line to the file
-        }
+        }*/
     }
     
     file.close();
