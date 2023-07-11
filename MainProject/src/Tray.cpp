@@ -471,7 +471,6 @@ void Tray::SaveSegmentedMask(std::string path, cv::Mat src) {
 
 }
 
-
 // constructor that does everything
 Tray::Tray(std::string trayBefore, std::string trayAfter) {
 
@@ -595,7 +594,7 @@ cv::Mat Tray::SegmentBread(cv::Mat src) {
     cv::Mat mask;
     // Put this in .h file
     int thresholdLow = 70;
-    int thresholdHigh = 113;
+    int thresholdHigh = 117;
     cv::inRange(yuvChannels[1], thresholdLow, thresholdHigh, mask);
 
     // Apply the mask to the original image
@@ -725,10 +724,38 @@ cv::Mat Tray::SegmentBread(cv::Mat src) {
     cv::Mat newMask = saturationMask - thresholdedSaturation;
 
     cv::morphologyEx(newMask, newMask, cv::MORPH_ERODE, kernelErosion, cv::Point(1, 1), 1);
-    cv::morphologyEx(newMask, newMask, cv::MORPH_DILATE, kernelErosion, cv::Point(1, 1), 6);
+    cv::morphologyEx(newMask, newMask, cv::MORPH_DILATE, kernelErosion, cv::Point(1, 1), 12);
         
-    cv::Mat out = (newMask/255)*13;
 
+
+    // Find contours in the binary mask
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(newMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    // Create a new image to hold the filled shapes
+    cv::Mat filledMask = cv::Mat::zeros(newMask.size(), CV_8UC1);
+
+    double thresholdArea = 15000;
+    double largestAreaPost = 0;
+    int index = -1;
+    // Fill the contours of the shapes in the filled mask
+    for (int i = 0; i < contours.size(); i ++) {
+        double area = cv::contourArea(contours[i]);
+        if (area > thresholdArea)
+            if (area > largestAreaPost) {
+                largestAreaPost = area;
+                index = i;
+            }    
+    }
+    if (index != -1) 
+        cv::fillPoly(filledMask, contours[index], cv::Scalar(13));
+
+
+
+    cv::Mat out = filledMask;
+    
+
+    
     return out;
 }
 
