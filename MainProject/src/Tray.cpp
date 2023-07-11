@@ -218,13 +218,60 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
     // Choose best labels such that if there are more plates, they are one first and one second plate
     if (platesLabelDistances.size() > 1) {
 
-        while (!((getIndexInVector(firstPlatesLabel, platesLabelDistances[0][0].label) != -1)
-                ^ (getIndexInVector(firstPlatesLabel, platesLabelDistances[1][0].label) != -1)))
-        {
-            if (platesLabelDistances[0][0] < platesLabelDistances[1][0])
-                platesLabelDistances[1].erase(platesLabelDistances[1].begin());
-            else
-                platesLabelDistances[0].erase(platesLabelDistances[0].begin());
+        int plate0FirstIdx = -1, plate0SecondIdx = -1, plate1FirstIdx = -1, plate1SecondIdx = -1;
+
+        // Find best first and second plate option for plate 0
+        for (int j = 0; j < platesLabelDistances[0].size(); j++) {
+            if (getIndexInVector(firstPlatesLabel, platesLabelDistances[0][j].label) != -1) {
+                if (plate0FirstIdx == -1)
+                    plate0FirstIdx = j;
+            } else {
+                if (plate0SecondIdx == -1)
+                    plate0SecondIdx = j;
+            }
+            if (plate0FirstIdx != -1 && plate0SecondIdx != -1)
+                break;
+        }
+
+        // Find best first and second plate option for plate 1
+        for (int j = 0; j < platesLabelDistances[1].size(); j++) {
+            if (getIndexInVector(firstPlatesLabel, platesLabelDistances[1][j].label) != -1) {
+                if (plate1FirstIdx == -1)
+                    plate1FirstIdx = j;
+            } else {
+                if (plate1SecondIdx == -1)
+                    plate1SecondIdx = j;
+            }
+            if (plate1FirstIdx != -1 && plate1SecondIdx != -1)
+                break;
+        }
+
+        // Compute the loss between choosing the best first or second dish normalized using the worst label distance
+        double plate0NormalizedLoss = std::abs(platesLabelDistances[0][plate0FirstIdx].distance - platesLabelDistances[0][plate0SecondIdx].distance)
+                                        / platesLabelDistances[0][platesLabelDistances[0].size() - 1].distance;
+        double plate1NormalizedLoss = std::abs(platesLabelDistances[1][plate1FirstIdx].distance - platesLabelDistances[1][plate1SecondIdx].distance)
+                                        / platesLabelDistances[1][platesLabelDistances[1].size() - 1].distance;
+        
+        if (plate0NormalizedLoss < plate1NormalizedLoss) {
+            
+            // If plate 0 has less loss, give preference to plate 1
+            if (plate1FirstIdx < plate1SecondIdx) {
+                platesLabelDistances[0][0] = platesLabelDistances[0][plate0SecondIdx];
+                platesLabelDistances[1][0] = platesLabelDistances[1][plate1FirstIdx];
+            } else {
+                platesLabelDistances[0][0] = platesLabelDistances[0][plate0FirstIdx];
+                platesLabelDistances[1][0] = platesLabelDistances[1][plate1SecondIdx];
+            }
+        } else {
+
+            // Otherwise, give preference to plate 1
+            if (plate0FirstIdx < plate0SecondIdx) {
+                platesLabelDistances[0][0] = platesLabelDistances[0][plate0FirstIdx];
+                platesLabelDistances[1][0] = platesLabelDistances[1][plate1SecondIdx];
+            } else {
+                platesLabelDistances[0][0] = platesLabelDistances[0][plate0SecondIdx];
+                platesLabelDistances[1][0] = platesLabelDistances[1][plate1FirstIdx];
+            }
         }
     }
 
@@ -398,7 +445,6 @@ std::string ExtractTray(std::string imagePath) {
 
     // Extract the substring between the penultimate and last slash
     std::string penultimatePath = imagePath.substr(penultimateSlashPos + 1, lastSlashPos - penultimateSlashPos - 1);
-
 
     std::string imageName = imagePath.substr(
         imagePath.find_last_of('/') + 1,
