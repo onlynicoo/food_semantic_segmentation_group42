@@ -785,7 +785,7 @@ cv::Mat Tray::SegmentBread(cv::Mat src) {
     // Create a new image to hold the filled shapes
     cv::Mat filledMask = cv::Mat::zeros(newMask.size(), CV_8UC1);
 
-    double thresholdArea = 15000;
+    double thresholdArea = 20000;
     double largestAreaPost = 0;
     int index = -1;
     // Fill the contours of the shapes in the filled mask
@@ -838,8 +838,8 @@ void Tray::PrintInfo() {
         saladAfter = PlatesFinder::get_salad(traysAfter, true);
     }
 
-    resize(PlatesFinder::print_plates_image(OverimposeDetection(traysBefore, traysBeforeDetected), saladBefore), tmp1_2, stdSize);
-    resize(PlatesFinder::print_plates_image(OverimposeDetection(traysAfter, traysAfterDetected), saladAfter), tmp2_2, stdSize);
+    resize(OverimposeDetection(traysBefore, traysBeforeDetected), tmp1_2, stdSize);
+    resize(OverimposeDetection(traysAfter, traysAfterDetected), tmp2_2, stdSize);
     resize(colorBeforeSegmented, tmp1_3, stdSize);
     resize(colorAfterSegmented, tmp2_3, stdSize);
 
@@ -878,4 +878,51 @@ void Tray::PrintSaladPlate() {
     
     cv::waitKey();
 
+}
+
+cv::Mat RefinePastaPesto(cv::Mat src, cv::Mat mask) {
+    cv::Mat workingFood;
+    cv::bitwise_and(src, src, workingFood, mask);
+    cv::imshow("tmp1", workingFood); cv::waitKey();
+
+    cv::Mat hsvImage;
+    cv::cvtColor(workingFood, hsvImage, cv::COLOR_BGR2HSV);
+    
+    // Access and process the Y, U, and V channels separately
+    std::vector<cv::Mat> hsvChannels;
+    cv::split(hsvImage, hsvChannels);
+
+    cv::imshow("channel0", hsvChannels[0]); 
+    cv::imshow("channel1", hsvChannels[1]); 
+    cv::imshow("channel2", hsvChannels[2]); 
+    
+    cv::imshow("hsvImage", hsvImage);
+
+
+    cv::Mat thresholdingMask = hsvChannels[1] > 0.6*255;
+
+    cv::Mat thresholdedImg;
+    cv::bitwise_and(src, src, thresholdedImg, thresholdingMask);
+    
+    cv::imshow("thresholded saturation", thresholdedImg);
+
+    cv::waitKey();
+
+
+    return workingFood;
+}
+// test to refine segmentations of leftover
+void Tray::RefineSegmentation() {
+
+    for (int i = 1; i < 14; i++) {
+        cv::Mat givenFoodMat = (traysAfterSegmented == i);
+        switch (i) {
+            case 1:
+                RefinePastaPesto(traysAfter, givenFoodMat);
+                break;
+
+            default:
+                break;
+        }
+    }
 }

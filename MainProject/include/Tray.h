@@ -51,6 +51,6 @@ class Tray {
         void PrintSaladPlate();
         
         void PrintInfo();
+        void RefineSegmentation();
 
-        
 };

@@ -1,7 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include "../include/Tray.h"
 
-int main( int argc, char** argv ) {
+ int main( int argc, char** argv ) {
 
     // Read arguments
     if (argc < 3) {
@@ -11,6 +11,7 @@ int main( int argc, char** argv ) {
                 Tray my_tray = Tray("../../../data/Food_leftover_dataset/tray" + std::to_string(tray) + "/food_image.jpg",
                                     "../../../data/Food_leftover_dataset/tray" + std::to_string(tray) + "/leftover" + std::to_string(left) + ".jpg");
                 my_tray.PrintInfo();
+                //my_tray.RefineSegmentation();
                 std::cout << std::endl;
             }
         }
@@ -18,7 +19,11 @@ int main( int argc, char** argv ) {
         std::string before = argv[1];
         std::string after = argv[2];
         Tray my_tray = Tray(before, after);
+        my_tray.PrintInfo();
+        //my_tray.RefineSegmentation();
+        std::cout << std::endl;
     }
 
+    
     return 0;
 }

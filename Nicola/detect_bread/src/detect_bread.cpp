@@ -35,23 +35,10 @@ int thresholdHigh = 116;
 int thresholdHigh = 117;
 int thresholdLow = 70;
 int thresholdValueToChange = 111;
-int thresholdValueCanny = 115;
+int thresholdValueCanny = 102;
 
 int thresholdSaturation = 160;
 
-Mat enhance(Mat src){
-    // Apply logarithmic transformation
-    cv::Mat enhancedImage;
-    Mat help = src.clone();
-    help.convertTo(enhancedImage, CV_32F); // Convert image to floating-point for logarithmic calculation
-
-    float c = 255.0 / log(1 + 255); // Scaling constant for contrast adjustment
-    cv::log(enhancedImage + 1, enhancedImage); // Apply logarithmic transformation
-    enhancedImage = enhancedImage * c; // Apply contrast adjustment
-
-    enhancedImage.convertTo(enhancedImage, CV_8U); // Convert back to 8-bit unsigned integer
-    return enhancedImage;
-}
 
 cv::Mat SegmentBread(cv::Mat src) {
 
@@ -90,6 +77,8 @@ cv::Mat SegmentBread(cv::Mat src) {
     // Create a binary mask of pixels within the specified range
     cv::Mat mask;
     // Put this in .h file
+    int thresholdLow = 70;
+    int thresholdHigh = 117;
     cv::inRange(yuvChannels[1], thresholdLow, thresholdHigh, mask);
 
     // Apply the mask to the original image
@@ -134,10 +123,8 @@ cv::Mat SegmentBread(cv::Mat src) {
     double maxValue = 255;
 
     // put this in .h file
+    int thresholdValueToChange = 111;
     cv::threshold(result, thresholdedLargestComponentMask, thresholdValueToChange, maxValue, cv::THRESH_BINARY);
-
-
-
     
     // Apply the mask to the original image
     cv::Mat resultlargestComponents;
@@ -163,6 +150,7 @@ cv::Mat SegmentBread(cv::Mat src) {
     double maxValueCanny = 255;
 
     // put this in .h file
+    int thresholdValueCanny = 115;
     cv::threshold(result, thresholdedCanny, thresholdValueCanny, maxValue, cv::THRESH_BINARY);
     
     // Define the structuring element for closing operation
@@ -228,7 +216,7 @@ cv::Mat SegmentBread(cv::Mat src) {
     // Create a new image to hold the filled shapes
     cv::Mat filledMask = cv::Mat::zeros(newMask.size(), CV_8UC1);
 
-    double thresholdArea = 15000;
+    double thresholdArea = 20000;
     double largestAreaPost = 0;
     int index = -1;
     // Fill the contours of the shapes in the filled mask
@@ -240,10 +228,9 @@ cv::Mat SegmentBread(cv::Mat src) {
                 index = i;
             }    
     }
+    std::cout<< "largest area post " << largestAreaPost << "\n";
     if (index != -1) 
-        cv::fillPoly(filledMask, contours[index], cv::Scalar(255));
-    
-
+        cv::fillPoly(filledMask, contours[index], cv::Scalar(13));
 
 
 
@@ -253,6 +240,9 @@ cv::Mat SegmentBread(cv::Mat src) {
     
     return out;
 }
+
+
+
 
 
 
