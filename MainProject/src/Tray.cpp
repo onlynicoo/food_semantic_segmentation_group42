@@ -73,7 +73,7 @@ int getMostFrequentNeighbor(std::vector<std::vector<int>> matrix, int row, int c
     for (int i = row - radius; i <= row + radius; i++) {
         for (int j = col - radius; j <= col + radius; j++) {
             
-            if (i < 0 || j < 0 || i >= matrix.size() || j >= matrix[0].size())
+            if (i < 0 || j < 0 || i >= matrix.size() || j >= matrix[0].size() || (i == row && j == col) || matrix[i][j] == -1)
                 continue;
 
             int neighborValue = matrix[i][j];
@@ -94,7 +94,10 @@ std::vector<std::vector<int>> getMostFrequentMatrix(std::vector<std::vector<int>
 
     for (int i = 0; i < matrix.size(); i++)
         for (int j = 0; j < matrix[0].size(); j++)
-            newMatrix[i][j] = getMostFrequentNeighbor(matrix, i, j, radius);
+                if (matrix[i][j] == -1)
+                    newMatrix[i][j] = -1;
+                else
+                    newMatrix[i][j] = getMostFrequentNeighbor(matrix, i, j, radius);
 
     return newMatrix;
 }
@@ -108,10 +111,11 @@ std::vector<int> getVectorUnion(std::vector<int> a, std::vector<int> b){
 }
 
 std::vector<int> getVectorIntersection(std::vector<int> a, std::vector<int> b){
-    std::sort(a.begin(), a.end());
-    std::sort(b.begin(), b.end());
+    std::set<int> setB(b.begin(), b.end());
     std::vector<int> c;
-    std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), back_inserter(c));
+    for (int i = 0; i < a.size(); i++)
+        if (setB.count(a[i]) > 0)
+            c.push_back(a[i]);
     return c;
 }
 
@@ -136,7 +140,9 @@ void InsertBoundingBox(cv::Mat src, std::string filePath) {
         cv::Rect bbox = cv::boundingRect(binaryMask);
         file << "ID " << i << "; [" << bbox.x << ", " << bbox.y << ", " << bbox.width << ", " << bbox.height << "]\n"; // Write the new line to the file
         
-        /*std::vector<std::vector<cv::Point>> contours;
+        /*
+        // Create multiple bbox
+        std::vector<std::vector<cv::Point>> contours;
         cv::findContours(binaryMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
         
         std::vector<cv::Rect> boundingBoxes;
@@ -148,7 +154,8 @@ void InsertBoundingBox(cv::Mat src, std::string filePath) {
         if (file.is_open() && boundingBoxes.size() > 0) {
             for (int j = 0; j < boundingBoxes.size(); j++)
                 file << "ID " << i << "; [" << boundingBoxes[j].x << ", " << boundingBoxes[j].y << ", " << boundingBoxes[j].width << ", " << boundingBoxes[j].height << "]\n"; // Write the new line to the file
-        }*/
+        }
+        */
     }
     
     file.close();
@@ -209,12 +216,14 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
         platesLabelDistances.push_back(FeatureComparator::getLabelDistances(labels, allowedLabels, patchFeatures));
     }
 
-    /*for (int j = 0; j < platesLabelDistances.size(); j++) {
-        for (int k = 0; k < platesLabelDistances[j].size(); k++) {
+    /*
+    // Print label distances
+    for (int j = 0; j < platesLabelDistances.size(); j++) {
+        for (int k = 0; k < platesLabelDistances[j].size(); k++)
             std::cout << platesLabelDistances[j][k].label << " " << platesLabelDistances[j][k].distance << " - ";
-        }
         std::cout << std::endl;
-    }*/
+    }
+    */
 
     // Choose best labels such that if there are more plates, they are one first and one second plate
     if (platesLabelDistances.size() > 1) {
@@ -282,8 +291,8 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
         int foodLabel = platesLabelDistances[i][0].label;
         double labelDistance = platesLabelDistances[i][0].distance;
         
-        // If it is a first plate or if we have enough confidence with the label, we have finished
-        if (getIndexInVector(firstPlatesLabel, foodLabel) != -1 || labelDistance < FeatureComparator::NORMALIZE_VALUE * 0.07) {
+        // If it is a first plate, we have finished
+        if (getIndexInVector(firstPlatesLabel, foodLabel) != -1) {
             
             platesLabels.push_back(foodLabel);
 
@@ -322,6 +331,14 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
 
                     cv::Mat curMask = cv::Mat::zeros(tmpMask.size(), tmpMask.type());
                     submask.copyTo(curMask(bbox)(windowRect)); 
+
+                    /*
+                    // Print each masked window
+                    cv::Mat masked;
+                    cv::bitwise_and(src, src, masked, curMask);
+                    cv::imshow("masked", masked);
+                    cv::waitKey();
+                    */
 
                     // Find a label for each submask                  
                     cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, curMask);
@@ -367,6 +384,11 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
                     cv::Rect windowRect(x, y, std::min(windowSize, croppedMask.cols - x), std::min(windowSize, croppedMask.rows - y));
                     cv::Mat submask = croppedMask(windowRect).clone();
 
+                    if (cv::countNonZero(submask) == 0) {
+                        labelMat[row][col] = -1;
+                        continue;
+                    }
+
                     cv::Mat curMask = cv::Mat::zeros(tmpMask.size(), tmpMask.type());
                     submask.copyTo(curMask(bbox)(windowRect));
 
@@ -393,6 +415,9 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
                     // Compute submask
                     cv::Rect windowRect(x, y, std::min(windowSize, croppedMask.cols - x), std::min(windowSize, croppedMask.rows - y));
                     cv::Mat submask = croppedMask(windowRect).clone();
+
+                    if (cv::countNonZero(submask) == 0)
+                        continue;
 
                     cv::Mat curMask = cv::Mat::zeros(tmpMask.size(), tmpMask.type());
                     submask.copyTo(curMask(bbox)(windowRect));

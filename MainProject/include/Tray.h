@@ -30,7 +30,7 @@ class Tray {
 
     public:
         const int SMALL_WINDOW_SIZE = 50;
-        const int BIG_WINDOW_SIZE = 325;
+        const int BIG_WINDOW_SIZE = 150;
         
         //
         Tray(std::string, std::string);
