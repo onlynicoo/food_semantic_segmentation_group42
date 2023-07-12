@@ -166,6 +166,7 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
     std::string labelFeaturesPath = "../data/label_features.yml";
 
     std::vector<int> firstPlatesLabel{1, 2, 3, 4, 5}, secondPlatesLabel{6, 7, 8, 9}, sideDishesLabels{10, 11};
+    int saladLabel = 12;
 
     cv::Size segmentationMaskSize = src.size();
     cv::Mat segmentationMask(segmentationMaskSize, CV_8UC1, cv::Scalar(0));
@@ -419,18 +420,42 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
                 for(int r = 0; r < segmentationMask.rows; r++)
                         for(int c = 0; c < segmentationMask.cols; c++)
                             if(foodMasks[j].at<uchar>(r,c) != 0)
-                                segmentationMask.at<uchar>(r,c) = int(foodMasks[j].at<uchar>(r,c)*foodLabel);
+                                segmentationMask.at<uchar>(r,c) = int(foodMasks[j].at<uchar>(r,c) * foodLabel);
                 
                 std::cout << "Label found: " << LABELS[foodLabel] << std::endl;
             }
         }
     }
 
+
+    // Segment bread
     cv::Mat breadMask = SegmentBread(src);
     for(int r = 0; r < breadMask.rows; r++)
         for(int c = 0; c < breadMask.cols; c++)
             if(segmentationMask.at<uchar>(r,c) == 0)
                 segmentationMask.at<uchar>(r,c) = breadMask.at<uchar>(r,c);
+
+    // Segment salad
+    std::vector<cv::Vec3f> saladBowls = PlatesFinder::get_salad(src, (getIndexInVector(labelsFound, saladLabel) != -1));
+    if (saladBowls.size() != 0) {
+
+        cv::Point center;
+        int radius;
+        center.x = saladBowls[0][0];
+        center.y = saladBowls[0][1];
+        radius = saladBowls[0][2];
+
+        cv::Mat saladMask;
+        PlateRemover::getSaladMask(src, saladMask, center, radius);
+
+        for(int r = 0; r < saladMask.rows; r++)
+            for(int c = 0; c < saladMask.cols; c++)
+                if(segmentationMask.at<uchar>(r,c) == 0)
+                    segmentationMask.at<uchar>(r,c) = int(saladMask.at<uchar>(r,c) * saladLabel);
+
+        platesLabels.push_back(saladLabel);
+    }
+    
     // Keep labels found
     labelsFound = platesLabels;
 
