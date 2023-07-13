@@ -18,20 +18,17 @@ int findTrayNumber(const std::string& str)
 
 	int trayNumber = -1;  // Valore di default se il token non viene trovato
 
-	while (iss >> token)
-	{
-		if (token.find("tray") != std::string::npos) 
-		{
-			// Trovato il token "tray", estrai il numero successivo
-			std::string trayNumStr = token.substr(4);  // Ignora i primi 4 caratteri ("tray")
+	while (iss >> token) {
+		size_t found = token.find("tray");
+		if (found != std::string::npos) {
+			std::string trayNumStr = token.substr(found + 4);
 			try {
 				trayNumber = std::stoi(trayNumStr);
 			}
 			catch (const std::exception& e) {
-				// Errore di conversione del numero
 				std::cout << "Errore: Impossibile convertire il numero di tray." << std::endl;
 			}
-			break;  // Esci dal ciclo
+			break;
 		}
 	}
 
@@ -45,16 +42,21 @@ void Test::test_the_system(const std::string& dataSetPath)
 {
 	//Each food segmented by us will be in this vector of Prediction. Look its definition
 	std::vector<Prediction> predictions;
-	
+
 	//Each of 15 class we could predict from label 0 to label 14
 	std::set<int> predictedClasses;
-	
+
 	//Mean intersection over union metric
 	double mIoU = 0;
 
 	//Number of each food found on professor's dataset
-	double groundTruthFoods = 0;
+	int groundTruthFoods = 0;
 
+	//Number of images on professor's dataset
+	int numImagesDataset = 0;
+
+
+	std::vector<double> mAPs;
 
 	//We will examinate trayVector by multiples of 3
 	for (int i = 0; i < trayVector.size(); i += 3)
@@ -63,25 +65,26 @@ void Test::test_the_system(const std::string& dataSetPath)
 		Tray t_lo1 = trayVector.at(i);
 		int TrayNumber = findTrayNumber(t_lo1.get_traysAfterNames());
 
+		//Mettere directory output corretta. questa era di prova
+		std::string outputPath = "C:/Users/User/Desktop/prova finaleç/output";
+
 		//Food Image (before) masks
-		cv::Mat ourProjectMasks_fI; // = getMask(??);
+		cv::Mat ourProjectMasks_fI = cv::imread(outputPath + "/tray" + std::to_string(TrayNumber) + "/masks/food_image_mask.png", cv::IMREAD_GRAYSCALE);
 		std::string dataSetMasks_fI = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/masks/food_image_mask.png";
 
 		//Food Image (before) bounding boxes
-		std::string ourProjectBBRecords_fI; // = getBoundingBoxes(??);
+		std::string ourProjectBBRecords_fI = outputPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/food_image_bounding_box.txt";
 		std::string dataSetBBRecords_fI = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/food_image_bounding_box.txt";
-		
-	
-		/*std::pair<double, int> result_of_single_IoU = OneImageSegmentation_IoUMetric(
-			imread(dataSetMasks_fI,cv::IMREAD_GRAYSCALE), ourProjectMasks_fI, dataSetBBRecords_fI,
-			ourProjectBBRecords_fI, predictions,predictedClasses);*/
 
-		std::pair<double, int> result_of_single_IoU = OneImageSegmentation_MetricCalculations(0, imread(dataSetMasks_fI,cv::IMREAD_GRAYSCALE),
-			dataSetBBRecords_fI,ourProjectMasks_fI, dataSetBBRecords_fI, predictions,predictedClasses);
-		
+		std::pair<double, int> result_of_single_IoU = OneImageSegmentation_MetricCalculations(0, imread(dataSetMasks_fI, cv::IMREAD_GRAYSCALE),
+			dataSetBBRecords_fI, ourProjectMasks_fI, ourProjectBBRecords_fI, mAPs, groundTruthFoods);
+
+
 		//Updating mIoU every time
-		mIoU = (mIoU * groundTruthFoods + result_of_single_IoU.first) / result_of_single_IoU.second;
 
+		double temp = mIoU * groundTruthFoods + result_of_single_IoU.first;
+		groundTruthFoods += result_of_single_IoU.second;
+		mIoU = temp / groundTruthFoods;
 
 		/*
 		*   Now, leftover's examination
@@ -92,29 +95,33 @@ void Test::test_the_system(const std::string& dataSetPath)
 		{
 			//Leftover masks and bbs
 			Tray t_loj = trayVector.at(j);
-			cv::Mat ourProjectMasks_lj; // = getMask(t_LO);
-			std::string ourProjectBBRecords_lj; // = getBoundingBox Path
+			cv::Mat ourProjectMasks_lj = cv::imread(outputPath + "/tray" + std::to_string(TrayNumber) + "/masks/leftover" + std::to_string(j % 3 + 1) + ".png", cv::IMREAD_GRAYSCALE);
+			std::string ourProjectBBRecords_lj = outputPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/leftover" + std::to_string(j % 3 + 1) + "_bounding_box.txt";
 
 			//Corresponding prof's
-			std::string dataSetMasks_lj = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/masks/leftover/" + std::to_string(j+1) + ".png";
-			std::string dataSetBBRecords_loj = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/ " + std::to_string(j+1) + ".txt";
+			std::string dataSetMasks_lj = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/masks/leftover" + std::to_string(j % 3 + 1) + ".png";
+			std::string dataSetBBRecords_loj = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/leftover" + std::to_string(j % 3 + 1) + "_bounding_box.txt";
 
 			std::pair<double, int> result_of_single_IoU = OneImageSegmentation_MetricCalculations(j - i + 1, imread(dataSetMasks_lj, cv::IMREAD_GRAYSCALE), dataSetBBRecords_loj,
-				ourProjectMasks_lj, ourProjectBBRecords_lj, predictions, predictedClasses, imread(dataSetMasks_fI, cv::IMREAD_GRAYSCALE), dataSetBBRecords_fI);
-				
+				ourProjectMasks_lj, ourProjectBBRecords_lj, mAPs, groundTruthFoods, imread(dataSetMasks_fI, cv::IMREAD_GRAYSCALE), dataSetBBRecords_fI);
+
 			//Updating mIoU every time
-			mIoU = (mIoU * groundTruthFoods + result_of_single_IoU.first) / result_of_single_IoU.second;
+
+			double temp = mIoU * groundTruthFoods + result_of_single_IoU.first;
+			groundTruthFoods += result_of_single_IoU.second;
+			mIoU = temp / groundTruthFoods;
 
 		}
 
+		numImagesDataset += 4;
 	}
 
-	double sumAP=0.0;
-	for (const auto& c : predictedClasses)
+	double sumAP = 0.0;
+	for (const auto& mAP : mAPs)
 	{
-		sumAP += calculateAP(predictions,(int)c);
+		sumAP += mAP;
 	}
-	double mAP = sumAP / predictedClasses.size();
+	double mAP = sumAP / numImagesDataset;
 
 	std::cout << "\nSystem AP : " << mAP << "\n";
 	std::cout << "\nSystem mIoU : " << mIoU << "\n";
