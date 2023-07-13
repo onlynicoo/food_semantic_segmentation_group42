@@ -1,5 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include "../include/Tray.h"
+#include "../include/Test.h"
 
  int main( int argc, char** argv ) {
 
