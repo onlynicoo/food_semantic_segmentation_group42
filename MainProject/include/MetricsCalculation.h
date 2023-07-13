@@ -88,7 +88,7 @@ class RectangleFileOur
 
 		//Setters
 		void setIsTaken(bool taken) { isTaken = taken; }
-		void setPrediction(bool pred) { prediction = pred; }
+		void setPrediction(double pred) { prediction = pred; }
 
 		RectangleFileOur(int id, const std::vector<int>& coords, bool tak)
 			: rectID(id), coordinates(coords), isTaken(tak), prediction(0) {}
@@ -101,21 +101,10 @@ class RectangleFileOur
 
 std::pair<std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string, std::string);
 
-void calculateRectangleCentralPixel(int, int, int, int, int&, int&);
-
-
-
 
 double singlePlateFoodSegmentation_IoUMetric(const cv::Mat&, const cv::Mat&);
 
 double singlePlateLeftoverEstimationMetric(const cv::Mat&, const cv::Mat&);
-
-
-
-//SOON TO BE DELETED
-void OneImageSegmentation_LeftoverEstimation(const cv::Mat&, const cv::Mat&, std::string, std::string);
-//SOON TO BE DELETED
-std::pair<double, int> OneImageSegmentation_IoUMetric(const cv::Mat&, const cv::Mat&, std::string, std::string, std::vector<Prediction>&, std::set<int>&);
 
 
 std::pair<double, int> OneImageSegmentation_MetricCalculations(
@@ -124,11 +113,11 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations(
 	const std::string,
 	const cv::Mat&,
 	std::string,
-	std::vector<Prediction>&,
-	std::set<int>&,
+	std::vector<double>&,
+	int&,
 	const cv::Mat & = cv::Mat(), /* gT_FI_masks */
 	const std::string = std::string() /* gT_FI_BB */
 );
 
 
-double calculateAP(const std::vector<Prediction>&, int);
+double calculateAP(const std::vector<Prediction>&, int, int);
