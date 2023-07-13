@@ -138,8 +138,8 @@ void InsertBoundingBox(cv::Mat src, std::string filePath) {
             continue;
 
         cv::Rect bbox = cv::boundingRect(binaryMask);
-        file << "ID " << i << "; [" << bbox.x << ", " << bbox.y << ", " << bbox.width << ", " << bbox.height << "]\n"; // Write the new line to the file
-        
+        file << "ID: " << i << "; [" << bbox.x << ", " << bbox.y << ", " << bbox.width << ", " << bbox.height << "]\n"; // Write the new line to the file
+
         /*
         // Create multiple bbox
         std::vector<std::vector<cv::Point>> contours;
@@ -509,13 +509,24 @@ std::string ExtractName(std::string imagePath) {
         imagePath.find_last_of('/') + 1,
         imagePath.find_last_of('.') - 1 - imagePath.find_last_of('/'));
 
-    return imageName;
+    return  imageName.append("_bounding_box");
 }
 
 //should make bool and check output
 void Tray::SaveSegmentedMask(std::string path, cv::Mat src) {
 
-    std::string filename = "../output/" + ExtractTray(path) + "/" + "masks/" + ExtractName(path) + ".jpg";
+    std::string imageName = ExtractName(path);
+
+    if (imageName.compare("food_image_bounding_box") == 0)
+        imageName = "food_image_mask";
+    if (imageName.compare("leftover1_bounding_box") == 0)
+        imageName = "leftover1";
+    if (imageName.compare("leftover2_bounding_box") == 0)
+        imageName = "leftover2";
+    if (imageName.compare("leftover3_bounding_box") == 0)
+        imageName = "leftover3";
+
+    std::string filename = ExtractTray(path) + "/" + "masks/" + imageName + ".png";
 
     bool success = cv::imwrite(filename, src);
 
@@ -534,8 +545,8 @@ Tray::Tray(std::string trayBefore, std::string trayAfter) {
     traysAfter = after;
 
     std::vector<int> labelsFound;
-    traysBeforeDetected = "../output/" + ExtractTray(trayBefore) + "/" + "bounding_boxes/" + ExtractName(trayBefore) + ".txt";
-    traysAfterDetected = "../output/" + ExtractTray(trayAfter) + "/" + "bounding_boxes/" + ExtractName(trayAfter) + ".txt";
+    traysBeforeDetected = ExtractTray(trayBefore) + "/" + "bounding_boxes/" + ExtractName(trayBefore) + ".txt";
+    traysAfterDetected = ExtractTray(trayAfter) + "/" + "bounding_boxes/" + ExtractName(trayAfter) + ".txt";
 
     traysBeforeSegmented = SegmentImage(before, labelsFound, traysBeforeDetected);
     traysAfterSegmented = SegmentImage(after, labelsFound,  traysAfterDetected);
