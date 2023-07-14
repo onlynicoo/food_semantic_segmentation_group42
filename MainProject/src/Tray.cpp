@@ -1106,6 +1106,30 @@ cv::Mat RefinePastaTomato(cv::Mat src, cv::Mat mask) {
     return bgrThresholded ;
 }
 
+void refinePorkCutlet(cv::Mat src, cv::Mat &mask) {
+        
+    // Close the holes borders
+    int closingSize = cv::boundingRect(mask).height / 4;
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(closingSize, closingSize));
+    morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
+
+    // Find contours in the mask
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    // Sort contours based on area
+    std::sort(contours.begin(), contours.end(), [](const std::vector<cv::Point>& contour1, const std::vector<cv::Point>& contour2) {
+        return cv::contourArea(contour1) > cv::contourArea(contour2);
+    });
+
+    int n = 1;
+    std::vector<std::vector<cv::Point>> keptContours;
+    keptContours = std::vector<std::vector<cv::Point>>(contours.begin(), contours.begin() + std::min(n, (int) contours.size()));
+
+    mask = cv::Mat::zeros(mask.size(), CV_8UC1);
+    cv::drawContours(mask, keptContours, -1, cv::Scalar(1), cv::FILLED);
+}
+
 // test to refine segmentations of leftover
 void Tray::RefineSegmentation() {
 
@@ -1121,6 +1145,9 @@ void Tray::RefineSegmentation() {
                 RefinePastaTomato(traysBefore, givenFoodMatBefore);
                 RefinePastaTomato(traysAfter, givenFoodMatAfter);
                 break;
+            case 6:
+                refinePorkCutlet(traysBefore, givenFoodMatBefore);
+                refinePorkCutlet(traysAfter, givenFoodMatAfter);
             default:
                 break;
         }
