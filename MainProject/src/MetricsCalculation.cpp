@@ -315,6 +315,9 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 					double single_iou = singlePlateFoodSegmentation_IoUMetric(gT_rect_fi.getCoords(), our_rect_fi.getCoords());
 					our_rect_fi.setPrediction(single_iou);
 					sum_iou += single_iou;
+
+					std::cout << "\nFor food item " << our_rect_fi.getRectId() << ", its IoU => " << single_iou << '\n';
+
 					break;
 				}
 			}
@@ -365,6 +368,8 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 					//We evaluate also for 3) because we need the confidence score
 					double single_iou = singlePlateFoodSegmentation_IoUMetric(gT_rect_lo.getCoords(), our_rect_lo.getCoords());
 					our_rect_lo.setPrediction(single_iou);
+
+					std::cout << "\nFor food item " << our_rect_lo.getRectId() << ", its IoU => " << single_iou << '\n';
 
 					sum_iou += single_iou;
 
@@ -442,6 +447,7 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 							}
 					}
 
+					std::cout << "\nour leftover's pixels for food item " << our_rect_lo.getRectId() << " are: " << ourLeftoverPixels;
 					std::cout << "\nABS of the differences in pixels for food item " << our_rect_lo.getRectId() << " is: " << abs(ourLeftoverPixels - profLeftoverPixels);
 
 					for (auto& our_rect_fi : our_rects_FI)
