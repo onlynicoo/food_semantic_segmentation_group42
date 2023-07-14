@@ -357,10 +357,13 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
             if (foundSideDishes.size() > 1)
                 keptLabels.push_back(foundSideDishes[1]);
 
+            /*
+            // Print kept labels
             std::cout << "Kept labels: ";
             for (int j = 0; j < keptLabels.size(); j++)
                 std::cout << keptLabels[j] << " ";
             std::cout << std::endl;
+            */
 
             // Use smaller submasks for a better segmentation results
             windowSize = std::min(SMALL_WINDOW_SIZE, std::min(croppedMask.rows, croppedMask.cols));

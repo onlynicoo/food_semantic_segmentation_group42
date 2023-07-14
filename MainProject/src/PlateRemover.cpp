@@ -106,4 +106,21 @@ void PlateRemover::getSaladMask(cv::Mat src, cv::Mat &mask, cv::Point center, in
     int closingSize = radius / 3;
     cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(closingSize, closingSize));
     morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
+
+    // Find contours in the mask
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    // Remove the small areas (w.r.t. the bowl area)
+    double bowlArea = PlateRemover::PI * std::pow(radius, 2);
+    for(int i = 0; i < contours.size(); i++) {
+        float area = cv::contourArea(contours[i]);
+        if (area < bowlArea * 0.001) {
+            contours.erase(contours.begin() + i);
+            i--;
+        }
+    }
+
+    mask = cv::Mat::zeros(mask.size(), CV_8UC1);
+    cv::drawContours(mask, contours, -1, cv::Scalar(1), cv::FILLED);
 }
