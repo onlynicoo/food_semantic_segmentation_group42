@@ -94,10 +94,7 @@ std::vector<std::vector<int>> getMostFrequentMatrix(std::vector<std::vector<int>
 
     for (int i = 0; i < matrix.size(); i++)
         for (int j = 0; j < matrix[0].size(); j++)
-                if (matrix[i][j] == -1)
-                    newMatrix[i][j] = -1;
-                else
-                    newMatrix[i][j] = getMostFrequentNeighbor(matrix, i, j, radius);
+                newMatrix[i][j] = getMostFrequentNeighbor(matrix, i, j, radius);
 
     return newMatrix;
 }
@@ -433,6 +430,47 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
                 }
             }
 
+            // Refine segmentation re-assigning small pieces of food
+            if (keptLabels.size() == 2) {
+                for (int j = 0; j < keptLabels.size(); j++) {
+
+                    if (cv::countNonZero(foodMasks[j]) == 0)
+                        continue;
+
+                    // Find contours in the mask
+                    std::vector<std::vector<cv::Point>> contours, keptContours;
+                    cv::findContours(foodMasks[j], contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+                    // Sort contours based on area
+                    std::sort(contours.begin(), contours.end(), [](const std::vector<cv::Point>& contour1, const std::vector<cv::Point>& contour2) {
+                        return cv::contourArea(contour1) > cv::contourArea(contour2);
+                    });
+
+                    // Keep biggest contour if it is not too small
+                    if (contours.size() > 0 && cv::contourArea(contours[0]) > 500) {
+                        keptContours.push_back(contours.front());
+                        contours.erase(contours.begin());
+
+                        // Keep second biggest contour if it is slightly smaller
+                        if (contours.size() > 0 && cv::contourArea(contours[0]) > cv::contourArea(keptContours[0]) * 0.90) {
+                            keptContours.push_back(contours.front());
+                            contours.erase(contours.begin());
+                        }
+                    }
+
+                    // Draw kept countours
+                    foodMasks[j] = cv::Mat::zeros(foodMasks[j].size(), CV_8UC1);
+                    cv::drawContours(foodMasks[j], keptContours, -1, cv::Scalar(1), cv::FILLED);
+                    
+                    // Draw other countours on the other mask
+                    if (j == 0)
+                        cv::drawContours(foodMasks[1], contours, -1, cv::Scalar(1), cv::FILLED);
+                    else
+                        cv::drawContours(foodMasks[0], contours, -1, cv::Scalar(1), cv::FILLED);
+                    
+                }
+            }
+
             // Add found masks to the segmentation mask
             for (int j = 0; j < keptLabels.size(); j++) {
 
@@ -451,7 +489,6 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
             }
         }
     }
-
 
     // Segment bread
     cv::Mat breadMask = SegmentBread(src);
@@ -1081,7 +1118,6 @@ void Tray::RefineSegmentation() {
                 RefinePastaTomato(traysBefore, givenFoodMatBefore);
                 RefinePastaTomato(traysAfter, givenFoodMatAfter);
                 break;
-            
             default:
                 break;
         }
