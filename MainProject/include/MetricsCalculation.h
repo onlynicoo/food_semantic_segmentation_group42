@@ -102,22 +102,28 @@ class RectangleFileOur
 std::pair<std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string, std::string);
 
 
-double singlePlateFoodSegmentation_IoUMetric(const cv::Mat&, const cv::Mat&);
+double singlePlateFoodSegmentation_IoUMetric(const std::vector<int>& profBB, const std::vector<int>& ourBB);
 
 double singlePlateLeftoverEstimationMetric(const cv::Mat&, const cv::Mat&);
 
 
-std::pair<double, int> OneImageSegmentation_MetricCalculations(
-	int,
-	const cv::Mat&,
-	const std::string,
-	const cv::Mat&,
-	std::string,
-	std::vector<double>&,
-	int&,
-	const cv::Mat & = cv::Mat(), /* gT_FI_masks */
-	const std::string = std::string() /* gT_FI_BB */
+std::pair<double, int> OneImageSegmentation_MetricCalculations_(
+	int code,
+
+	//always must-have
+	const cv::Mat& gT_FI_masks,
+	const std::string gT_FI_BBs,
+	const cv::Mat& ourMasks_FI,
+	std::string ourBBs_FI,
+
+	std::vector<Prediction>& predictions,
+	std::set<int>& predictedClasses,
+	int& gtf,
+
+	const cv::Mat& gT_leftover_masks,
+	const std::string gT_leftover_BBs,
+	const cv::Mat& ourMasks_leftover,
+	const std::string ourBBs_leftover
 );
 
-
-double calculateAP(const std::vector<Prediction>&, int, int);
+double calculateAP(const std::vector<Prediction>&, int);
