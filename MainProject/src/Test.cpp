@@ -66,7 +66,7 @@ void Test::test_the_system(const std::string& dataSetPath)
 		int TrayNumber = findTrayNumber(t_lo1.get_traysAfterNames());
 
 		//Mettere directory output corretta. questa era di prova
-		std::string outputPath = "C:/Users/User/Desktop/prova finaleç/output";
+		std::string outputPath = "../output";
 
 		//Food Image (before) masks
 		cv::Mat ourProjectMasks_fI = cv::imread(outputPath + "/tray" + std::to_string(TrayNumber) + "/masks/food_image_mask.png", cv::IMREAD_GRAYSCALE);

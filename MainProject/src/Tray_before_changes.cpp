@@ -138,8 +138,8 @@ void InsertBoundingBox(cv::Mat src, std::string filePath) {
             continue;
 
         cv::Rect bbox = cv::boundingRect(binaryMask);
-        file << "ID: " << i << "; [" << bbox.x << ", " << bbox.y << ", " << bbox.width << ", " << bbox.height << "]\n"; // Write the new line to the file
-
+        file << "ID " << i << "; [" << bbox.x << ", " << bbox.y << ", " << bbox.width << ", " << bbox.height << "]\n"; // Write the new line to the file
+        
         /*
         // Create multiple bbox
         std::vector<std::vector<cv::Point>> contours;
@@ -170,7 +170,7 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
         "4. pasta with clams and mussels", "5. pilaw rice with peppers and peas", "6. grilled pork cutlet",
         "7. fish cutlet", "8. rabbit", "9. seafood salad", "10. beans", "11. basil potatoes", "12. salad", "13. bread"};
 
-    std::string labelFeaturesPath = "../features/label_features.yml";
+    std::string labelFeaturesPath = "../data/label_features.yml";
 
     std::vector<int> firstPlatesLabel{1, 2, 3, 4, 5}, secondPlatesLabel{6, 7, 8, 9}, sideDishesLabels{10, 11};
     int saladLabel = 12;
@@ -483,6 +483,8 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
     
     // Keep labels found
     labelsFound = platesLabels;
+    
+
 
     return segmentationMask;
 }
@@ -509,24 +511,13 @@ std::string ExtractName(std::string imagePath) {
         imagePath.find_last_of('/') + 1,
         imagePath.find_last_of('.') - 1 - imagePath.find_last_of('/'));
 
-    return  imageName.append("_bounding_box");
+    return imageName;
 }
 
 //should make bool and check output
 void Tray::SaveSegmentedMask(std::string path, cv::Mat src) {
 
-    std::string imageName = ExtractName(path);
-
-    if (imageName.compare("food_image_bounding_box") == 0)
-        imageName = "food_image_mask";
-    if (imageName.compare("leftover1_bounding_box") == 0)
-        imageName = "leftover1";
-    if (imageName.compare("leftover2_bounding_box") == 0)
-        imageName = "leftover2";
-    if (imageName.compare("leftover3_bounding_box") == 0)
-        imageName = "leftover3";
-
-    std::string filename = ExtractTray(path) + "/" + "masks/" + imageName + ".png";
+    std::string filename = "../output/" + ExtractTray(path) + "/" + "masks/" + ExtractName(path) + ".jpg";
 
     bool success = cv::imwrite(filename, src);
 
@@ -545,8 +536,8 @@ Tray::Tray(std::string trayBefore, std::string trayAfter) {
     traysAfter = after;
 
     std::vector<int> labelsFound;
-    traysBeforeDetected = ExtractTray(trayBefore) + "/" + "bounding_boxes/" + ExtractName(trayBefore) + ".txt";
-    traysAfterDetected = ExtractTray(trayAfter) + "/" + "bounding_boxes/" + ExtractName(trayAfter) + ".txt";
+    traysBeforeDetected = "../output/" + ExtractTray(trayBefore) + "/" + "bounding_boxes/" + ExtractName(trayBefore) + ".txt";
+    traysAfterDetected = "../output/" + ExtractTray(trayAfter) + "/" + "bounding_boxes/" + ExtractName(trayAfter) + ".txt";
 
     traysBeforeSegmented = SegmentImage(before, labelsFound, traysBeforeDetected);
     traysAfterSegmented = SegmentImage(after, labelsFound,  traysAfterDetected);
@@ -837,8 +828,6 @@ void Tray::PrintInfo() {
 
     // Resize output to have all images of same size
     resize(traysAfter, tmp2_1, stdSize);
-    // resize(OverimposeDetection(traysBefore, traysBeforeDetected), tmp1_2, stdSize);
-    // resize(OverimposeDetection(traysAfter, traysAfterDetected), tmp2_2, stdSize);
 
     std::vector<cv::Vec3f> saladBefore = PlatesFinder::get_salad(traysBefore, false);
     std::vector<cv::Vec3f> saladAfter;
@@ -1061,6 +1050,8 @@ cv::Mat RefinePastaTomato(cv::Mat src, cv::Mat mask) {
     cv::imshow("filledMask", filledMask);
     
     cv::imshow("bgrThresholded", bgrThresholded);
+
+    //cv::imshow("hsvImage", hsvImage);
 
     cv::waitKey();
     return bgrThresholded ;
