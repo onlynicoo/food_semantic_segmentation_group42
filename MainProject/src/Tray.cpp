@@ -170,7 +170,7 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
         "4. pasta with clams and mussels", "5. pilaw rice with peppers and peas", "6. grilled pork cutlet",
         "7. fish cutlet", "8. rabbit", "9. seafood salad", "10. beans", "11. basil potatoes", "12. salad", "13. bread"};
 
-    std::string labelFeaturesPath = "../data/label_features.yml";
+    std::string labelFeaturesPath = "../features/label_features.yml";
 
     std::vector<int> firstPlatesLabel{1, 2, 3, 4, 5}, secondPlatesLabel{6, 7, 8, 9}, sideDishesLabels{10, 11};
     int saladLabel = 12;

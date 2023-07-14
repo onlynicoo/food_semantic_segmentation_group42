@@ -1,5 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include "../include/Tray.h"
+#include "../include/Test.h"
 
 int main( int argc, char** argv ) {
 
@@ -14,7 +15,7 @@ int main( int argc, char** argv ) {
             std::string str2 = "../input/Food_leftover_dataset/tray" + std::to_string(tray) + "/leftover" + std::to_string(left) + ".jpg";
             Tray my_tray = Tray(str1, str2);
             trayVec.push_back(my_tray);
-            my_tray.PrintInfo();
+            // my_tray.PrintInfo();
             std::cout << std::endl;
             }
         }
@@ -24,5 +25,9 @@ int main( int argc, char** argv ) {
         std::string after = argv[2];
         Tray my_tray = Tray(before, after);
     }
+
+    Test myTest = Test(trayVec);
+    myTest.test_the_system("../input/Food_leftover_dataset");
+
     return 0;
 }
