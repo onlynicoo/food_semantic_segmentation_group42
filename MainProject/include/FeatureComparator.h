@@ -3,10 +3,9 @@
 
 class FeatureComparator {
     private:
-        static cv::Mat getHueFeatures(cv::Mat img, cv::Mat mask, int numFeatures);
-        static cv::Mat getLBPFeatures(cv::Mat img, cv::Mat mask, int numFeatures);
-        static cv::Mat getCannyLBPFeatures(cv::Mat img, cv::Mat mask, int numFeatures);
-        static void appendColumns(cv::Mat src, cv::Mat &dst);
+        static void getHueFeatures(const cv::Mat&, const cv::Mat&, int, cv::Mat&);
+        static void getLBPFeatures(const cv::Mat&, const cv::Mat&, int, cv::Mat&);
+        static void getCannyLBPFeatures(const cv::Mat&, const cv::Mat&, int, cv::Mat&);
 
     public:
         struct LabelDistance {
@@ -22,8 +21,8 @@ class FeatureComparator {
         static const std::string LABEL_FEATURES_PATH;
         static const std::string LABEL_FEATURES_NAME;
 
-        static cv::Mat getImageFeatures(cv::Mat img, cv::Mat mask);
-        static std::vector<LabelDistance> getLabelDistances(cv::Mat labelsFeatures, std::vector<int> labelWhitelist, cv::Mat imgFeatures);
-        static void writeLabelFeaturesToFile(cv::Mat features);
-        static cv::Mat readLabelFeaturesFromFile();
+        static void getImageFeatures(const cv::Mat&, const cv::Mat&, cv::Mat&);
+        static std::vector<LabelDistance> getLabelDistances(const cv::Mat&, std::vector<int>, const cv::Mat&);
+        static void writeLabelFeaturesToFile(const cv::Mat&);
+        static void readLabelFeaturesFromFile(cv::Mat&);
 };

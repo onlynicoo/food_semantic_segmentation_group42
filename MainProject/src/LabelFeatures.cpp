@@ -1,5 +1,6 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
+
 #include "../include/FeatureComparator.h"
 
 const int N_LABELS = 14;
@@ -8,8 +9,7 @@ const char* IMG_EXT = ".jpg";
 const char* MASK_EXT = ".png";
 std::vector<std::string> trayNames = {"food_image", "leftover1", "leftover2", "leftover3"};
 
-int main(int argc, char **argv) {
-
+int main(int argc, char** argv) {
     std::string inputDir = "../input/Food_leftover_dataset";
 
     std::cout << "Processing images in " + inputDir << std::endl;
@@ -18,7 +18,6 @@ int main(int argc, char **argv) {
     std::vector<cv::Mat> imagesFeatures(N_LABELS);
     for (int i = 0; i < N_TRAYS; i++)
         for (int j = 0; j < trayNames.size(); j++) {
-
             // Read image and mask
             std::string imgName = inputDir + "/tray" + std::to_string(i + 1) + "/" + trayNames[j] + IMG_EXT;
             std::string maskName = inputDir + "/tray" + std::to_string(i + 1) + "/masks/" + trayNames[j];
@@ -30,7 +29,6 @@ int main(int argc, char **argv) {
 
             // Read each masked label
             for (int label = 1; label < N_LABELS; label++) {
-
                 cv::Mat labelMask;
                 compare(mask, label, labelMask, cv::CMP_EQ);
 
@@ -38,7 +36,8 @@ int main(int argc, char **argv) {
                     continue;
 
                 // If not empty, compute features for the patch
-                cv::Mat features = FeatureComparator::getImageFeatures(img, labelMask);
+                cv::Mat features;
+                FeatureComparator::getImageFeatures(img, labelMask, features);
 
                 if (numFeatures == -1)
                     numFeatures = features.cols;
@@ -63,6 +62,6 @@ int main(int argc, char **argv) {
         if (!imagesFeatures[i].empty()) {
             reduce(imagesFeatures[i], labelFeatures.row(i), 0, cv::REDUCE_AVG);
         }
-    
+
     FeatureComparator::writeLabelFeaturesToFile(labelFeatures);
 }
