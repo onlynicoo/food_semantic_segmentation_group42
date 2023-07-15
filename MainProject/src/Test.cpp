@@ -87,7 +87,7 @@ void Test::test_the_system(const std::string& dataSetPath)
 	{
 		//Indentifying Tray Number: elaborating it
 		Tray t_lo1 = trayVector.at(i);
-		int TrayNumber = findTrayNumber(t_lo1.get_trayAfterName());
+		int TrayNumber = findTrayNumber(t_lo1.get_trayAfterPath());
 
 		std::cout << "\n\n\nConsidering Tray: " << TrayNumber << "\n";
 		std::cout << "FoodImage (Tray" << TrayNumber << ")\n\n";
@@ -184,8 +184,8 @@ void Test::test_the_system_randomly(const std::string& dataSetPath)
 	{
 		//Indentifying Tray Number: elaborating it
 		Tray t_lo = trayVector.at(i);
-		int TrayNumber = findTrayNumber(t_lo.get_trayAfterName());
-		int leftoverNumber = findLeftoverNumber(t_lo.get_trayAfterName());
+		int TrayNumber = findTrayNumber(t_lo.get_trayAfterPath());
+		int leftoverNumber = findLeftoverNumber(t_lo.get_trayAfterPath());
 
 		std::cout << "\n\n\nConsidering Tray: " << TrayNumber << "\n";
 		std::cout << "FoodImage (Tray" << TrayNumber << ")\n\n";

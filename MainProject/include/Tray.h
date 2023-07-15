@@ -7,43 +7,38 @@ class Tray {
     private:
         // Attributes
 
-        // names of trays
-        std::string traysBeforeNames;
-        std::string traysAfterNames;
+        // Trays names
+        std::string trayBeforePath;
+        std::string trayAfterPath;
 
-        // mats of trays
-        cv::Mat traysBefore;
-        cv::Mat traysAfter;
+        // Trays images
+        cv::Mat trayBeforeImage;
+        cv::Mat trayAfterImage;
 
-        std::string traysBeforeDetected;
-        std::string traysAfterDetected;
+        // Trays bounding boxes
+        std::string trayBeforeBoundingBoxesPath;
+        std::string trayAfterBoundingBoxesPath;
         
-        cv::Mat traysBeforeSegmented;
-        cv::Mat traysAfterSegmented;
+        // Trays images
+        cv::Mat trayBeforeSegmentationMask;
+        cv::Mat trayAfterSegmentationMask;
         
-        void SaveSegmentedMask(std::string, cv::Mat);
+        void saveSegmentedMask(const std::string&, const cv::Mat&);
 
         cv::Mat SegmentBread(cv::Mat);
 
     public:        
-        //
-        Tray(std::string, std::string);
-        
-        //
-        void FindPlates(const cv::Mat);
-        
-        //
-        cv::Mat SegmentImage(const cv::Mat&, std::vector<int>&, std::string);
-        
-        //
-        cv::Mat SegmentFoods(const cv::Mat);
 
-        //
-        std::string get_trayAfterName();
-
-        //
-        void PrintSaladPlate();
+        // Constructor that orchestrate the flow of segmentation and detection.
+        Tray(const std::string&, const std::string&);
         
-        void ShowTray();
-        void RefineSegmentation(const cv::Mat&, cv::Mat&, int);
+        // Segment a given image, saving the food found and the the bounding boxes
+        cv::Mat segmentImage(const cv::Mat&, std::vector<int>&, const std::string&);
+        
+        // Get trayAfterPath
+        std::string get_trayAfterPath();
+        
+        // Show the trays before and after the meal, the detection bounding boxes and the segmentation masks
+        void showTray();
+
 };
