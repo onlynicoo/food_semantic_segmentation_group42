@@ -29,8 +29,7 @@ class FindFood {
         static const int max_radius_hough_salad_refine = 202;
 
     public:
-        static std::vector<cv::Vec3f> findPlates(cv::Mat src);
-        static cv::Mat drawPlates(const cv::Mat src, const std::vector<cv::Vec3f> circles);
-        static std::vector<cv::Vec3f> findSaladBowl(cv::Mat src, bool saladFound);
-        static cv::Mat findBread(const cv::Mat& src);
+        static std::vector<cv::Vec3f> findPlates(const cv::Mat&);
+        static std::vector<cv::Vec3f> findSaladBowl(const cv::Mat&, bool);
+        static void findBread(const cv::Mat&, cv::Mat&);
 };

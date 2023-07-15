@@ -95,7 +95,8 @@ void SegmentFood::getFoodMaskFromPlates(
 
     cv::Mat segmentationMask(src.size(), CV_8UC1, cv::Scalar(0));
 
-    cv::Mat labels = FeatureComparator::readLabelFeaturesFromFile();
+    cv::Mat labels;
+    FeatureComparator::readLabelFeaturesFromFile(labels);
 
     std::vector<std::vector<FeatureComparator::LabelDistance>> platesLabelDistances;
     std::vector<int> allowedLabels;
@@ -121,7 +122,8 @@ void SegmentFood::getFoodMaskFromPlates(
         platesMasks.push_back(tmpMask);
         
         // Creates the features for the segmented patch
-        cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, tmpMask);
+        cv::Mat patchFeatures;
+        FeatureComparator::getImageFeatures(src, tmpMask, patchFeatures);
         platesLabelDistances.push_back(FeatureComparator::getLabelDistances(labels, allowedLabels, patchFeatures));
     }
 
@@ -252,16 +254,17 @@ void SegmentFood::getFoodMaskFromPlates(
                     */
 
                     // Find a label for each submask                  
-                    cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, curMask);
+                    cv::Mat patchFeatures;
+                    FeatureComparator::getImageFeatures(src, curMask, patchFeatures);
                     foodLabel = FeatureComparator::getLabelDistances(labels, allowedLabels, patchFeatures)[0].label;
                     gridLabels.push_back(foodLabel);
                 }
             }
 
             // Repeat using only the most frequent labels of the previous step
-            std::vector<int> sortedGridLabels = Utils::sortVectorByFreq(gridLabels);
-            std::vector<int> foundSecondPlates = Utils::getVectorIntersection(sortedGridLabels, SECOND_PLATES_LABELS);
-            std::vector<int> foundSideDishes = Utils::getVectorIntersection(sortedGridLabels, SIDE_DISHES_LABELS);
+            Utils::sortVectorByFreq(gridLabels);
+            std::vector<int> foundSecondPlates = Utils::getVectorIntersection(gridLabels, SECOND_PLATES_LABELS);
+            std::vector<int> foundSideDishes = Utils::getVectorIntersection(gridLabels, SIDE_DISHES_LABELS);
 
             std::vector<int> keptLabels;
             if (!foundSecondPlates.empty())
@@ -308,14 +311,15 @@ void SegmentFood::getFoodMaskFromPlates(
                     submask.copyTo(curMask(bbox)(windowRect));
 
                     // Find a label for each submask
-                    cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, curMask);
+                    cv::Mat patchFeatures;
+                    FeatureComparator::getImageFeatures(src, curMask, patchFeatures);
                     foodLabel = FeatureComparator::getLabelDistances(labels, keptLabels, patchFeatures)[0].label;
                     labelMat[row][col] = foodLabel;
                 }
             }
 
             // Re-assign labels based also on the neighboring submasks
-            labelMat = Utils::getMostFrequentMatrix(labelMat, 1);
+            Utils::getMostFrequentMatrix(labelMat, 1);
 
             // Merge together submasks with the same label
             std::vector<cv::Mat> foodMasks(keptLabels.size());

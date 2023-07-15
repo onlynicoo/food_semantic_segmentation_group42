@@ -2,11 +2,13 @@
 #include <vector>
 
 class Utils {
+    private:
+        static int getMostFrequentNeighbor(const std::vector<std::vector<int>>&, int, int, int);
+
     public:
-        static std::vector<int> sortVectorByFreq(std::vector<int> values);
-        static int getMostFrequentNeighbor(std::vector<std::vector<int>> matrix, int row, int col, int radius);
-        static std::vector<std::vector<int>> getMostFrequentMatrix(std::vector<std::vector<int>> matrix, int radius);
-        static std::vector<int> getVectorUnion(std::vector<int> a, std::vector<int> b);
-        static std::vector<int> getVectorIntersection(std::vector<int> a, std::vector<int> b);
-        static int getIndexInVector(std::vector<int> vector, int value);
+        static void sortVectorByFreq(std::vector<int>&);
+        static void getMostFrequentMatrix(std::vector<std::vector<int>>&, int);
+        static std::vector<int> getVectorUnion(const std::vector<int>&, const std::vector<int>&);
+        static std::vector<int> getVectorIntersection(const std::vector<int>&, const std::vector<int>&);
+        static int getIndexInVector(const std::vector<int>&, int);
 };

@@ -5,7 +5,7 @@ const std::string FeatureComparator::LABEL_FEATURES_PATH = "../features/label_fe
 const std::string FeatureComparator::LABEL_FEATURES_NAME = "labelFeatures";
 
 std::vector<FeatureComparator::LabelDistance> FeatureComparator::getLabelDistances(
-    cv::Mat labelsFeatures, std::vector<int> labelWhitelist, cv::Mat imgFeatures)
+    const cv::Mat& labelsFeatures, std::vector<int> labelWhitelist, const cv::Mat& imgFeatures)
 {
     std::vector<FeatureComparator::LabelDistance> distances;
     for (int i = 0; i < labelsFeatures.rows; i++) {
@@ -24,7 +24,7 @@ std::vector<FeatureComparator::LabelDistance> FeatureComparator::getLabelDistanc
     return distances;
 }
 
-cv::Mat FeatureComparator::getHueFeatures(cv::Mat img, cv::Mat mask, int numFeatures) {
+void FeatureComparator::getHueFeatures(const cv::Mat& img, const cv::Mat& mask, int numFeatures, cv::Mat& features) {
     // Convert to HSV
     cv::Mat hsvImg;
     std::vector<cv::Mat> hsvChannels;
@@ -56,10 +56,10 @@ cv::Mat FeatureComparator::getHueFeatures(cv::Mat img, cv::Mat mask, int numFeat
     // Normalize the hist
     cv::normalize(hist, hist, NORMALIZE_VALUE, cv::NORM_L1);
 
-    return hist.t();
+    features = hist.t();
 }
 
-cv::Mat FeatureComparator::getLBPFeatures(cv::Mat img, cv::Mat mask, int numFeatures) {
+void FeatureComparator::getLBPFeatures(const cv::Mat& img, const cv::Mat& mask, int numFeatures, cv::Mat& features) {
     // Compute LBP texture features
     int lbp_radius = 1;
     int lbp_neighbors = pow(lbp_radius * 2 + 1, 2) - 1;
@@ -97,10 +97,10 @@ cv::Mat FeatureComparator::getLBPFeatures(cv::Mat img, cv::Mat mask, int numFeat
     // Normalize the hist
     cv::normalize(hist, hist, NORMALIZE_VALUE, cv::NORM_L1);
     
-    return hist.t();
+    features = hist.t();
 }
 
-cv::Mat FeatureComparator::getCannyLBPFeatures(cv::Mat img, cv::Mat mask, int numFeatures) {
+void FeatureComparator::getCannyLBPFeatures(const cv::Mat& img, const cv::Mat& mask, int numFeatures, cv::Mat& features) {
 
     // Convert the image to grayscale
     cv::Mat grayImage;
@@ -114,32 +114,25 @@ cv::Mat FeatureComparator::getCannyLBPFeatures(cv::Mat img, cv::Mat mask, int nu
     int t1 = 50, t2 = 150;
     Canny(grayImage, edges, t1, t2);
 
-    return getLBPFeatures(edges, mask, numFeatures);
+    getLBPFeatures(edges, mask, numFeatures, features);
 }
 
-void FeatureComparator::appendColumns(cv::Mat src, cv::Mat &dst) {
-    if (dst.empty())
-        dst = src;
-    else
-        cv::hconcat(src, dst, dst);
+void FeatureComparator::getImageFeatures(const cv::Mat& img, const cv::Mat& mask, cv::Mat& features) {
+    cv::Mat hueFeatures, cannyLBPFeatures;
+    getHueFeatures(img, mask, 64, hueFeatures);
+    getCannyLBPFeatures(img, mask, 64, cannyLBPFeatures);
+
+    features = 0.6 * hueFeatures;
+    cv::hconcat(0.4 *cannyLBPFeatures, features, features);
 }
 
-cv::Mat FeatureComparator::getImageFeatures(cv::Mat img, cv::Mat mask) {
-    cv::Mat features;
-    appendColumns(0.6 * getHueFeatures(img, mask, 64), features);
-    appendColumns(0.4 * getCannyLBPFeatures(img, mask, 64), features);
-    return features;
-}
-
-void FeatureComparator::writeLabelFeaturesToFile(cv::Mat features) {
+void FeatureComparator::writeLabelFeaturesToFile(const cv::Mat& features) {
     cv::FileStorage fs(LABEL_FEATURES_PATH, cv::FileStorage::WRITE);
     fs << LABEL_FEATURES_NAME << features;
     fs.release();
 }
 
-cv::Mat FeatureComparator::readLabelFeaturesFromFile() {
-    cv::Mat features;
-
+void FeatureComparator::readLabelFeaturesFromFile(cv::Mat& features) {
     // Read template images
     cv::FileStorage fs(LABEL_FEATURES_PATH, cv::FileStorage::READ);
     if (!fs.isOpened())
@@ -147,6 +140,4 @@ cv::Mat FeatureComparator::readLabelFeaturesFromFile() {
 
     fs[LABEL_FEATURES_NAME] >> features;
     fs.release();
-
-    return features;
 }

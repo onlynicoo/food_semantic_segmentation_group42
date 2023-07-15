@@ -78,9 +78,9 @@ cv::Mat Tray::SegmentImage(const cv::Mat& src, std::vector<int>& labelsFound, st
     }
 
     // Segment bread
-    cv::Mat breadMask;
-    cv::Mat breadRect = FindFood::findBread(src);
-    breadMask = SegmentFood::getBreadMask(src, breadRect);
+    cv::Mat breadArea, breadMask;
+    FindFood::findBread(src, breadArea);
+    breadMask = SegmentFood::getBreadMask(src, breadArea);
     segmentationMask += breadMask;
 
     // Keep labels found

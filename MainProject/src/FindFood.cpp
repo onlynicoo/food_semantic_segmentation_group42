@@ -2,7 +2,7 @@
 #include "../include/FindFood.h"
 
 // Find plate image
-std::vector<cv::Vec3f> FindFood::findPlates(cv::Mat src) {
+std::vector<cv::Vec3f> FindFood::findPlates(const cv::Mat& src) {
 
     cv::Mat src_gray;
     cv::cvtColor(src, src_gray, cv::COLOR_BGR2GRAY);
@@ -55,21 +55,7 @@ std::vector<cv::Vec3f> FindFood::findPlates(cv::Mat src) {
 
 }
 
-// Print plates in image
-cv::Mat FindFood::drawPlates(const cv::Mat src, const std::vector<cv::Vec3f> circles) {
-    cv::Mat output = src.clone();
-    // Draw the circle
-    for( size_t i = 0; i < circles.size(); i++ ) {
-        cv::Vec3i c = circles[i];
-        cv::Point center = cv::Point(c[0], c[1]);
-        // circle outline
-        int radius = c[2];
-        circle(output, center, radius, cv::Scalar(255,0,0), 20);
-    }
-    return output;
-}
-
-std::vector<cv::Vec3f> FindFood::findSaladBowl(cv::Mat src, bool saladFound) {
+std::vector<cv::Vec3f> FindFood::findSaladBowl(const cv::Mat& src, bool saladFound) {
 
     cv::Mat src_gray;
     cv::cvtColor(src, src_gray, cv::COLOR_BGR2GRAY);
@@ -110,7 +96,7 @@ std::vector<cv::Vec3f> FindFood::findSaladBowl(cv::Mat src, bool saladFound) {
     }
 }
 
-cv::Mat FindFood::findBread(const cv::Mat& src) {
+void FindFood::findBread(const cv::Mat& src, cv::Mat& breadArea) {
 
     // used as base img
     cv::Mat maskedImage = src.clone();
@@ -292,5 +278,5 @@ cv::Mat FindFood::findBread(const cv::Mat& src) {
     if (index != -1) 
         cv::fillPoly(out, contours[index], cv::Scalar(13));
 
-    return out;
+    breadArea = out;
 }

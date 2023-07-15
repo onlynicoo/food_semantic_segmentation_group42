@@ -38,7 +38,8 @@ int main(int argc, char **argv) {
                     continue;
 
                 // If not empty, compute features for the patch
-                cv::Mat features = FeatureComparator::getImageFeatures(img, labelMask);
+                cv::Mat features;
+                FeatureComparator::getImageFeatures(img, labelMask, features);
 
                 if (numFeatures == -1)
                     numFeatures = features.cols;
