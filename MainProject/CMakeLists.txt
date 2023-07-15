@@ -19,19 +19,24 @@ add_executable(LabelFeatures
 )
 
 # Libraries
-add_library(PlatesFinder
-    include/PlatesFinder.h
-    src/PlatesFinder.cpp
+add_library(FindFood
+    include/FindFood.h
+    src/FindFood.cpp
+)
+
+add_library(SegmentFood
+    include/SegmentFood.h
+    src/SegmentFood.cpp
+)
+
+add_library(Utils
+    include/Utils.h
+    src/Utils.cpp
 )
 
 add_library(Tray
     include/Tray.h
     src/Tray.cpp
-)
-
-add_library(PlateRemover
-    include/PlateRemover.h
-    src/PlateRemover.cpp
 )
 
 add_library(FeatureComparator
@@ -50,16 +55,16 @@ add_library(Test
 )
 
 # Link libraries
-target_link_libraries(PlatesFinder ${OpenCV_LIBS})
-target_link_libraries(PlateRemover ${OpenCV_LIBS})
 target_link_libraries(FeatureComparator ${OpenCV_LIBS})
+target_link_libraries(FindFood ${OpenCV_LIBS})
+target_link_libraries(SegmentFood ${OpenCV_LIBS})
 target_link_libraries(MetricsCalculation ${OpenCV_LIBS})
 target_link_libraries(Test ${OpenCV_LIBS})
 
 target_link_libraries(LabelFeatures FeatureComparator)
-target_link_libraries(Tray PlatesFinder PlateRemover FeatureComparator)
-target_link_libraries(Test Tray MetricsCalculation)
+target_link_libraries(Tray FindFood SegmentFood FeatureComparator Utils)
 target_link_libraries(main Tray)
+target_link_libraries(Test Tray MetricsCalculation)
 target_link_libraries(mainTest Tray Test)
 
 # Create main output folder

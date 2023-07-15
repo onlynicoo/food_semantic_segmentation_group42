@@ -1,8 +1,5 @@
 #pragma once
 #include <opencv2/opencv.hpp>
-#include "PlatesFinder.h"
-#include "PlateRemover.h"
-#include "FeatureComparator.h"
 
 // Declaration of the class PlateFinder
 class Tray {
@@ -23,6 +20,13 @@ class Tray {
         
         cv::Mat traysBeforeSegmented;
         cv::Mat traysAfterSegmented;
+
+        std::string LABELS[14] = {
+        "0. Background", "1. pasta with pesto", "2. pasta with tomato sauce", "3. pasta with meat sauce",
+        "4. pasta with clams and mussels", "5. pilaw rice with peppers and peas", "6. grilled pork cutlet",
+        "7. fish cutlet", "8. rabbit", "9. seafood salad", "10. beans", "11. basil potatoes", "12. salad", "13. bread"};
+
+        std::string labelFeaturesPath = "../features/label_features.yml";
         
         void SaveSegmentedMask(std::string, cv::Mat);
 

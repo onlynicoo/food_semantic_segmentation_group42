@@ -1,8 +1,8 @@
+#include <cstdlib>
+#include <ctime>
 #include <opencv2/opencv.hpp>
 #include "../include/Tray.h"
 #include "../include/Test.h"
-#include <cstdlib>
-#include <ctime>
 
 int main( int argc, char** argv ) {
 

@@ -1,16 +1,13 @@
-#include "../include/Tray.h"
-#include <iostream>
 #include <fstream>
+#include "../include/FeatureComparator.h"
+#include "../include/FindFood.h"
+#include "../include/SegmentFood.h"
+#include "../include/Utils.h"
+#include "../include/Tray.h"
 
-//
+
 std::string Tray::get_traysAfterNames() {
     return traysAfterNames;
-}        
-
-cv::Mat Tray::SegmentFoods(cv::Mat src) {
-    cv::Mat out;
-    // ... add code to detect food and return an image with bounding boxes
-    return out;
 }
 
 cv::Mat GetTrainedFeatures(std::string labelFeaturesPath) {
@@ -44,83 +41,6 @@ std::map<int, cv::Vec3b> InitColorMap() {
     colors[13] = cv::Vec3b{128, 128, 0};  // Olive
 
     return colors;
-}
-
-std::vector<int> sortVectorByFreq(std::vector<int> values) {
-    // Create frequency map
-    std::map<int, int> freqMap;
-    for (int value : values)
-        freqMap[value]++;
-
-    // Sort values descending based on frequencies
-    std::vector<std::pair<int, int>> sortedFreq(freqMap.begin(), freqMap.end());
-    std::sort(sortedFreq.begin(), sortedFreq.end(), [](std::pair<int, int> a, std::pair<int, int> b) {
-        return a.second > b.second;
-    });
-
-    // Get n most frequent values
-    std::vector<int> result;
-    for (int i = 0; i < sortedFreq.size(); i++)
-        result.push_back(sortedFreq[i].first);
-    return result;
-}
-
-int getMostFrequentNeighbor(std::vector<std::vector<int>> matrix, int row, int col, int radius) {
-    std::unordered_map<int, int> freqMap;
-    int maxCount = -1, mostFreqValue = -1;
-
-    // Iterate over the neighbors
-    for (int i = row - radius; i <= row + radius; i++) {
-        for (int j = col - radius; j <= col + radius; j++) {
-            
-            if (i < 0 || j < 0 || i >= matrix.size() || j >= matrix[0].size() || (i == row && j == col) || matrix[i][j] == -1)
-                continue;
-
-            int neighborValue = matrix[i][j];
-            freqMap[neighborValue]++;
-            int count = freqMap[neighborValue];
-
-            if (count > maxCount) {
-                maxCount = count;
-                mostFreqValue = neighborValue;
-            }
-        }
-    }
-    return mostFreqValue;
-}
-
-std::vector<std::vector<int>> getMostFrequentMatrix(std::vector<std::vector<int>> matrix, int radius) {
-    std::vector<std::vector<int>> newMatrix(matrix.size(), std::vector<int>(matrix[0].size()));
-
-    for (int i = 0; i < matrix.size(); i++)
-        for (int j = 0; j < matrix[0].size(); j++)
-                newMatrix[i][j] = getMostFrequentNeighbor(matrix, i, j, radius);
-
-    return newMatrix;
-}
-
-std::vector<int> getVectorUnion(std::vector<int> a, std::vector<int> b){
-    std::vector<int> c;
-    c.reserve(a.size() + b.size());
-    std::copy(a.begin(), a.end(), std::back_inserter(c));
-    std::copy(b.begin(), b.end(), std::back_inserter(c));
-    return c;
-}
-
-std::vector<int> getVectorIntersection(std::vector<int> a, std::vector<int> b){
-    std::set<int> setB(b.begin(), b.end());
-    std::vector<int> c;
-    for (int i = 0; i < a.size(); i++)
-        if (setB.count(a[i]) > 0)
-            c.push_back(a[i]);
-    return c;
-}
-
-int getIndexInVector(std::vector<int> vector, int value) {
-    auto it = std::find(vector.begin(), vector.end(), value);
-    if (it != vector.end())
-        return std::distance(vector.begin(), it);
-    return -1;
 }
 
 void InsertBoundingBox(cv::Mat src, std::string filePath) {
@@ -162,12 +82,6 @@ void InsertBoundingBox(cv::Mat src, std::string filePath) {
 cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std::string filePath) {
     // it contains
     // image detection | image segmentation
-    std::string LABELS[14] = {
-        "0. Background", "1. pasta with pesto", "2. pasta with tomato sauce", "3. pasta with meat sauce",
-        "4. pasta with clams and mussels", "5. pilaw rice with peppers and peas", "6. grilled pork cutlet",
-        "7. fish cutlet", "8. rabbit", "9. seafood salad", "10. beans", "11. basil potatoes", "12. salad", "13. bread"};
-
-    std::string labelFeaturesPath = "../features/label_features.yml";
 
     std::vector<int> firstPlatesLabel{1, 2, 3, 4, 5}, secondPlatesLabel{6, 7, 8, 9}, sideDishesLabels{10, 11};
     int saladLabel = 12;
@@ -176,16 +90,16 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
     cv::Mat segmentationMask(segmentationMaskSize, CV_8UC1, cv::Scalar(0));
 
     cv::Mat labels = GetTrainedFeatures(labelFeaturesPath);
-    std::vector<cv::Vec3f> plates = PlatesFinder::get_plates(src);
+    std::vector<cv::Vec3f> plates = FindFood::findPlates(src);
     plates.resize(std::min(2, (int) plates.size()));                          // Assume there are at most 2 plates
 
     std::vector<std::vector<FeatureComparator::LabelDistance>> platesLabelDistances;
     std::vector<int> platesLabels, allowedLabels;
     std::vector<cv::Mat> platesMasks;
 
-    allowedLabels = getVectorUnion(firstPlatesLabel, getVectorUnion(secondPlatesLabel, sideDishesLabels));
+    allowedLabels = Utils::getVectorUnion(firstPlatesLabel, Utils::getVectorUnion(secondPlatesLabel, sideDishesLabels));
     if (!labelsFound.empty())
-        allowedLabels = getVectorIntersection(allowedLabels, labelsFound);
+        allowedLabels = Utils::getVectorIntersection(allowedLabels, labelsFound);
 
     for(int i = 0; i < plates.size(); i++) {
         
@@ -197,7 +111,7 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
 
         cv::Mat tmpMask;
         
-        PlateRemover::getFoodMask(src, tmpMask, center, radius);
+        SegmentFood::getFoodMask(src, tmpMask, center, radius);
 
         // Do not consider empty plate masks
         if (cv::countNonZero(tmpMask) == 0) {
@@ -229,7 +143,7 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
 
         // Find best first and second plate option for plate 0
         for (int j = 0; j < platesLabelDistances[0].size(); j++) {
-            if (getIndexInVector(firstPlatesLabel, platesLabelDistances[0][j].label) != -1) {
+            if (Utils::getIndexInVector(firstPlatesLabel, platesLabelDistances[0][j].label) != -1) {
                 if (plate0FirstIdx == -1)
                     plate0FirstIdx = j;
             } else {
@@ -242,7 +156,7 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
 
         // Find best first and second plate option for plate 1
         for (int j = 0; j < platesLabelDistances[1].size(); j++) {
-            if (getIndexInVector(firstPlatesLabel, platesLabelDistances[1][j].label) != -1) {
+            if (Utils::getIndexInVector(firstPlatesLabel, platesLabelDistances[1][j].label) != -1) {
                 if (plate1FirstIdx == -1)
                     plate1FirstIdx = j;
             } else {
@@ -289,12 +203,12 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
         double labelDistance = platesLabelDistances[i][0].distance;
         
         // If it is a first plate, we have finished
-        if (getIndexInVector(firstPlatesLabel, foodLabel) != -1) {
+        if (Utils::getIndexInVector(firstPlatesLabel, foodLabel) != -1) {
             
             platesLabels.push_back(foodLabel);
 
-            // Refine segmentation 
-            RefineSegmentation(src, platesMasks[i], foodLabel);
+            // Refine segmentation
+            SegmentFood::refineMask(src, platesMasks[i], foodLabel);
             // Add to segmentation mask
             for(int r = 0; r < segmentationMask.rows; r++)
                 for(int c = 0; c < segmentationMask.cols; c++)
@@ -305,9 +219,9 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
         } else {
 
             // We have to split the mask into more foods
-            allowedLabels = getVectorUnion(secondPlatesLabel, sideDishesLabels);  
+            allowedLabels = Utils::getVectorUnion(secondPlatesLabel, sideDishesLabels);  
             if (!labelsFound.empty())
-                allowedLabels = getVectorIntersection(labelsFound, allowedLabels);
+                allowedLabels = Utils::getVectorIntersection(labelsFound, allowedLabels);
 
             // Crop mask to non zero area
             cv::Mat tmpMask = platesMasks[i];
@@ -347,9 +261,9 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
             }
 
             // Repeat using only the most frequent labels of the previous step
-            std::vector<int> sortedGridLabels = sortVectorByFreq(gridLabels);
-            std::vector<int> foundSecondPlates = getVectorIntersection(sortedGridLabels, secondPlatesLabel);
-            std::vector<int> foundSideDishes = getVectorIntersection(sortedGridLabels, sideDishesLabels);
+            std::vector<int> sortedGridLabels = Utils::sortVectorByFreq(gridLabels);
+            std::vector<int> foundSecondPlates = Utils::getVectorIntersection(sortedGridLabels, secondPlatesLabel);
+            std::vector<int> foundSideDishes = Utils::getVectorIntersection(sortedGridLabels, sideDishesLabels);
 
             std::vector<int> keptLabels;
             if (!foundSecondPlates.empty())
@@ -402,7 +316,7 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
             }
 
             // Re-assign labels based also on the neighboring submasks
-            labelMat = getMostFrequentMatrix(labelMat, 1);
+            labelMat = Utils::getMostFrequentMatrix(labelMat, 1);
 
             // Merge together submasks with the same label
             std::vector<cv::Mat> foodMasks(keptLabels.size());
@@ -426,7 +340,7 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
 
                     // Get label
                     foodLabel = labelMat[row][col];
-                    int index = getIndexInVector(keptLabels, foodLabel);
+                    int index = Utils::getIndexInVector(keptLabels, foodLabel);
 
                     // Add to the mask of the corresponding label
                     if (foodMasks[index].empty())
@@ -485,6 +399,8 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
                 foodLabel = keptLabels[j];
                 platesLabels.push_back(foodLabel);
 
+                SegmentFood::refineMask(src, platesMasks[i], foodLabel);
+
                 for(int r = 0; r < segmentationMask.rows; r++)
                         for(int c = 0; c < segmentationMask.cols; c++)
                             if(foodMasks[j].at<uchar>(r,c) != 0)
@@ -496,14 +412,14 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
     }
 
     // Segment bread
-    cv::Mat breadMask = SegmentBread(src);
+    cv::Mat breadMask = SegmentFood::SegmentBread(src);
     for(int r = 0; r < breadMask.rows; r++)
         for(int c = 0; c < breadMask.cols; c++)
             if(segmentationMask.at<uchar>(r,c) == 0)
                 segmentationMask.at<uchar>(r,c) = breadMask.at<uchar>(r,c);
 
     // Segment salad
-    std::vector<cv::Vec3f> saladBowls = PlatesFinder::get_salad(src, (getIndexInVector(labelsFound, saladLabel) != -1));
+    std::vector<cv::Vec3f> saladBowls = FindFood::findSaladBowl(src, (Utils::getIndexInVector(labelsFound, saladLabel) != -1));
     if (saladBowls.size() != 0) {
 
         cv::Point center;
@@ -513,7 +429,7 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
         radius = saladBowls[0][2];
 
         cv::Mat saladMask;
-        PlateRemover::getSaladMask(src, saladMask, center, radius);
+        SegmentFood::getSaladMask(src, saladMask, center, radius);
 
         for(int r = 0; r < saladMask.rows; r++)
             for(int c = 0; c < saladMask.cols; c++)
@@ -658,266 +574,6 @@ cv::Mat OverimposeDetection(cv::Mat src, std::string filePath) {
     }
     return out;
 }
-cv::Mat FindBread(cv::Mat src) {
-
-    // used as base img
-    cv::Mat maskedImage = src.clone();
-
-    std::vector<cv::Vec3f> plates = PlatesFinder::get_plates(src);
-    std::vector<cv::Vec3f> salad = PlatesFinder::get_salad(src, true);
-
-    // Draw the circle
-    for( size_t i = 0; i < plates.size(); i++ ) {
-        cv::Vec3i c = plates[i];
-        cv::Point center = cv::Point(c[0], c[1]);
-        // circle outline
-        int radius = c[2];
-        circle(maskedImage, center, radius*1, cv::Scalar(0,0,0), cv::FILLED);
-    }
-
-    // Draw the circle
-    for( size_t i = 0; i < salad.size(); i++ ) {
-        cv::Vec3i c = salad[i];
-        cv::Point center = cv::Point(c[0], c[1]);
-        // circle outline
-        int radius = c[2];
-        circle(maskedImage, center, radius*1.4, cv::Scalar(0,0,0), cv::FILLED);
-    }
-
-    // Convert image to YUV color space
-    cv::Mat yuvImage;
-    cv::cvtColor(maskedImage, yuvImage, cv::COLOR_BGR2YUV);
-
-    // Access and process the Y, U, and V channels separately
-    std::vector<cv::Mat> yuvChannels;
-    cv::split(yuvImage, yuvChannels);
-
-    // Create a binary mask of pixels within the specified range
-    cv::Mat mask;
-    // Put this in .h file
-    int thresholdLow = 70;
-    int thresholdHigh = 117;
-    cv::inRange(yuvChannels[1], thresholdLow, thresholdHigh, mask);
-
-    // Apply the mask to the original image
-    cv::Mat resultyuv;
-    cv::bitwise_and(yuvChannels[1], yuvChannels[1], resultyuv, mask);
-
-    // Define the structuring element for morphological operation
-    cv::Mat kernelclosure = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(11, 11));
-
-    // Perform morphological closure
-    cv::Mat resultclosure;
-    cv::morphologyEx(resultyuv, resultclosure, cv::MORPH_CLOSE, kernelclosure);
-
-    // Perform connected component analysis
-    cv::Mat labels, stats, centroids;
-    int numComponents = cv::connectedComponentsWithStats(resultclosure, labels, stats, centroids);
-
-    // Find the connected component with the largest area
-    int largestComponent = 0;
-    int largestArea = 0;
-    for (int i = 1; i < numComponents; ++i) {
-        int area = stats.at<int>(i, cv::CC_STAT_AREA);
-        if (area > largestArea) {
-            largestArea = area;
-            largestComponent = i;
-        }
-    }
-
-    // Create a binary mask for the largest component
-    cv::Mat largestComponentMask = (labels == largestComponent);
-
-    cv::Mat kernel = (cv::Mat_<float>(51, 51, 1))/(45*45);
-    
-    // Apply the sliding kernel using filter2D
-    cv::Mat result;
-    cv::filter2D(largestComponentMask, result, -1, kernel);
-
-    // Threshold the result image
-    cv::Mat thresholdedLargestComponentMask;
-    double maxValue = 255;
-
-    // put this in .h file
-    int thresholdValueToChange = 111;
-    cv::threshold(result, thresholdedLargestComponentMask, thresholdValueToChange, maxValue, cv::THRESH_BINARY);
-    
-    // Apply the mask to the original image
-    cv::Mat resultlargestComponents;
-    cv::bitwise_and(src, src, resultlargestComponents, thresholdedLargestComponentMask);
-
-
-    // Apply Canny edge detection
-    cv::Mat gray;
-    cv::cvtColor(resultlargestComponents, gray, cv::COLOR_BGR2GRAY);
-    cv::Mat edges;
-    int t1 = 50, t2 = 150;
-    cv::Canny(gray, edges, t1, t2);
-
-
-    cv::Mat kernelCanny = (cv::Mat_<float>(7, 7, 1))/(7*7);
-    
-    // Apply the sliding kernel using filter2D
-    cv::Mat resultCanny;
-    cv::filter2D(edges, result, -1, kernelCanny);
-
-    // Threshold the result image
-    cv::Mat thresholdedCanny;
-    double maxValueCanny = 255;
-
-    // put this in .h file
-    int thresholdValueCanny = 115;
-    cv::threshold(result, thresholdedCanny, thresholdValueCanny, maxValue, cv::THRESH_BINARY);
-    
-    // Define the structuring element for closing operation
-    int kernelSizeDilation = 3; // Adjust the size according to your needs
-    int kernelSizeClosing = 5; // Adjust the size according to your needs
-    int kernelSizeErosion = 3; // Adjust the size according to your needs
-    cv::Mat kernelDilation = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSizeDilation, kernelSizeDilation));
-    cv::Mat kernelClosing = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSizeClosing, kernelSizeClosing));
-    cv::Mat kernelErosion = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSizeErosion, kernelSizeErosion));
-
-    // Perform dilation followed by erosion (closing operation)
-    cv::Mat closedImage;
-    cv::morphologyEx(thresholdedCanny, closedImage, cv::MORPH_DILATE, kernelDilation, cv::Point(1, 1), 10);
-    cv::morphologyEx(closedImage, closedImage, cv::MORPH_CLOSE, kernelClosing, cv::Point(1, 1), 4);
-
-    
-
-
-    cv::morphologyEx(closedImage, closedImage, cv::MORPH_ERODE, kernelErosion, cv::Point(1, 1), 6);
-
-    cv::morphologyEx(closedImage, closedImage, cv::MORPH_DILATE, kernelDilation, cv::Point(1, 1), 20);
-
-
-    // Apply the mask to the original image
-    cv::Mat res;
-    cv::bitwise_and(src, src, res, closedImage);
-
-
-    //not bad but to improve
-    // Convert image to HSV color space
-    cv::Mat hsvImage;
-    cv::cvtColor(res, hsvImage, cv::COLOR_BGR2HSV);
-
-        // Split HSV channels
-    std::vector<cv::Mat> hsvChannels;
-    cv::split(hsvImage, hsvChannels);
-
-    // Access and process the H, S, and V channels separately
-    cv::Mat hueChannel = hsvChannels[0];
-    cv::Mat saturationChannel = hsvChannels[1];
-    cv::Mat valueChannel = hsvChannels[2];
-
-
-    // Threshold the result image
-    cv::Mat thresholdedSaturation;
-    cv::Mat saturationMask;
-    //put this in .h file
-    int thresholdSaturation = 140;
-    cv::threshold(saturationChannel, thresholdedSaturation, thresholdSaturation, 255 , cv::THRESH_BINARY);
-    cv::threshold(saturationChannel, saturationMask, 1, 255 , cv::THRESH_BINARY);
-
-    cv::Mat newMask = saturationMask - thresholdedSaturation;
-
-    cv::morphologyEx(newMask, newMask, cv::MORPH_ERODE, kernelErosion, cv::Point(1, 1), 1);
-    cv::morphologyEx(newMask, newMask, cv::MORPH_DILATE, kernelErosion, cv::Point(1, 1), 12);
-        
-    // Find contours in the binary mask
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(newMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-    // Create a new image to hold the filled shapes
-    cv::Mat out = cv::Mat::zeros(newMask.size(), CV_8UC1);
-
-    double thresholdArea = 20000;
-    double largestAreaPost = 0;
-    int index = -1;
-    // Fill the contours of the shapes in the filled mask
-    for (int i = 0; i < contours.size(); i ++) {
-        double area = cv::contourArea(contours[i]);
-        if (area > thresholdArea)
-            if (area > largestAreaPost) {
-                largestAreaPost = area;
-                index = i;
-            }    
-    }
-    if (index != -1) 
-        cv::fillPoly(out, contours[index], cv::Scalar(13));
-
-    return out;
-}
-
-std::vector<cv::Rect> findBoundingRectangles(const cv::Mat& mask) {
-    // Find contours in the mask
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-    // Find bounding rectangles for each contour
-    std::vector<cv::Rect> boundingRectangles;
-    for (const auto& contour : contours) {
-        cv::Rect boundingRect = cv::boundingRect(contour);
-        boundingRectangles.push_back(boundingRect);
-    }
-
-    return boundingRectangles;
-}
-
-cv::Mat Tray::SegmentBread(cv::Mat src) {
-    
-    cv::Mat breadMask = FindBread(src);
-
-    int kernelSizeErosion = 5; // Adjust the size according to your needs
-    cv::Mat kernelErosion = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(kernelSizeErosion, kernelSizeErosion));
-    cv::Mat erodedMask;
-    cv::morphologyEx(breadMask, erodedMask, cv::MORPH_ERODE, kernelErosion, cv::Point(1, 1), 3);
-
-    cv::Rect bbx = cv::boundingRect(erodedMask);
-    if (bbx.empty())
-        return cv::Mat(src.rows, src.cols, CV_8UC1, cv::Scalar(0));
-    cv::Mat final_image, result_mask, bgModel, fgModel;
-
-    // GrabCut segmentation algorithm for current box
-    grabCut(src,		// input image
-        result_mask,	// segmentation resulting mask
-        bbx,			// rectangle containing foreground
-        bgModel, fgModel,	// models
-        10,				// number of iterations
-        cv::GC_INIT_WITH_RECT);
-    
-    cv::Mat tmpMask0 = (result_mask == 0);
-    cv::Mat tmpMask1 = (result_mask == 1);
-    cv::Mat tmpMask2 = (result_mask == 2);
-    cv::Mat tmpMask3 = (result_mask == 3);
-
-    cv::Mat foreground = (tmpMask3 | tmpMask1);
-
-    // Perform connected component analysis
-    cv::Mat labels, stats, centroids;
-    int numComponents = cv::connectedComponentsWithStats(foreground, labels, stats, centroids);
-
-    // Find contours in the binary mask
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(foreground, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-    // Create a new image to hold the filled shapes
-    cv::Mat out = cv::Mat::zeros(foreground.size(), CV_8UC1);
-
-    double largestAreaPost = 0;
-    int index = -1;
-    // Fill the contours of the shapes in the filled mask
-    for (int i = 0; i < contours.size(); i ++) {
-        double area = cv::contourArea(contours[i]);
-        if (area > largestAreaPost) {
-            largestAreaPost = area;
-            index = i;
-        }    
-    }
-    if (index != -1) 
-        cv::fillPoly(out, contours[index], cv::Scalar(13));
-
-    return out;
-}   
 
 void Tray::PrintInfo() {
 
@@ -939,13 +595,13 @@ void Tray::PrintInfo() {
     // resize(OverimposeDetection(traysBefore, traysBeforeDetected), tmp1_2, stdSize);
     // resize(OverimposeDetection(traysAfter, traysAfterDetected), tmp2_2, stdSize);
 
-    std::vector<cv::Vec3f> saladBefore = PlatesFinder::get_salad(traysBefore, false);
+    std::vector<cv::Vec3f> saladBefore = FindFood::findSaladBowl(traysBefore, false);
     std::vector<cv::Vec3f> saladAfter;
-        saladAfter = PlatesFinder::get_salad(traysAfter, false);
+        saladAfter = FindFood::findSaladBowl(traysAfter, false);
     if (saladBefore.size() == 0) {
     }   
     else {
-        saladAfter = PlatesFinder::get_salad(traysAfter, true);
+        saladAfter = FindFood::findSaladBowl(traysAfter, true);
     }
 
     resize(OverimposeDetection(traysBefore, traysBeforeDetected), tmp1_2, stdSize);
@@ -976,216 +632,16 @@ void Tray::PrintInfo() {
 
 void Tray::PrintSaladPlate() {
 
-    std::vector<cv::Vec3f> saladBefore = PlatesFinder::get_salad(traysBefore, false);
+    std::vector<cv::Vec3f> saladBefore = FindFood::findSaladBowl(traysBefore, false);
     std::vector<cv::Vec3f> saladAfter;
     if (saladBefore.size() == 0)
-        saladAfter = PlatesFinder::get_salad(traysAfter, false);
+        saladAfter = FindFood::findSaladBowl(traysAfter, false);
     else 
-        saladAfter = PlatesFinder::get_salad(traysAfter, true);
+        saladAfter = FindFood::findSaladBowl(traysAfter, true);
 
-    cv::imshow("before", PlatesFinder::print_plates_image(traysBefore, saladBefore)); 
-    cv::imshow("after", PlatesFinder::print_plates_image(traysAfter, saladAfter)); 
+    cv::imshow("before", FindFood::drawPlates(traysBefore, saladBefore)); 
+    cv::imshow("after", FindFood::drawPlates(traysAfter, saladAfter)); 
     
     cv::waitKey();
 
 }
-
-void RefinePastaPesto(const cv::Mat& src, cv::Mat& mask) {
-    cv::Mat workingFood;
-    cv::Mat helperMask = mask.clone();
-    cv::Mat fullSizeMask(src.rows, src.cols, CV_8UC1, cv::Scalar(1));
-
-    cv::bitwise_and(src, src, workingFood, helperMask);
-
-    //cv::imshow("tmp1", workingFood); cv::waitKey();
-
-    cv::Mat hsvImage;
-    cv::cvtColor(workingFood, hsvImage, cv::COLOR_BGR2HSV);
-    
-    // Access and process the Y, U, and V channels separately
-    std::vector<cv::Mat> hsvChannels;
-    cv::split(hsvImage, hsvChannels);
-
-    cv::Mat thresholdingMask = hsvChannels[1] > 0.6*255;
-    cv::Mat thresholdedImage;
-    cv::bitwise_and(src, src, thresholdedImage, thresholdingMask);
-
-    //cv::imshow("thresholdedImage", thresholdedImage);
-
-    // Access and process the Y, U, and V channels separately
-    std::vector<cv::Mat> thresholdedImageChannels;
-    cv::split(thresholdedImage, thresholdedImageChannels);
-    cv::Mat thresholdedGreenMask = thresholdingMask;
-
-    for (int i = 0; i < thresholdingMask.rows; i++) {
-        for (int j = 0; j < thresholdingMask.cols; j++) {
-            if (thresholdedImageChannels[1].at<uchar>(i,j) < 85)
-                thresholdedGreenMask.at<uchar>(i,j) = 0;
-        }
-    }
-
-    int kernelSizeDilation = 5;
-    cv::Mat kernelDilation = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSizeDilation, kernelSizeDilation));
-
-    // Perform dilation followed by erosion (closing operation)
-    cv::Mat dilatedMask;
-    cv::morphologyEx(thresholdedGreenMask, dilatedMask, cv::MORPH_DILATE, kernelDilation, cv::Point(-1, -1), 1);
-
-    int kernelSizeClosure = 3;
-    cv::Mat kernelClosure = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(kernelSizeClosure, kernelSizeClosure));
-
-    // Perform dilation followed by erosion (closing operation)
-    cv::Mat closedMask;
-    cv::morphologyEx(dilatedMask, closedMask, cv::MORPH_CLOSE, kernelClosure, cv::Point(1, 1), 10);
-
-    int kernelSizeOpening = 3;
-    cv::Mat kernelOpening = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(kernelSizeOpening, kernelSizeOpening));
-
-    // Perform dilation followed by erosion (closing operation)
-    cv::Mat openMask;
-    cv::morphologyEx(closedMask, openMask, cv::MORPH_OPEN, kernelOpening, cv::Point(1, 1), 2);
-
-    // Find contours in the binary mask
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(openMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-    // Create a new image to hold the filled shapes
-    cv::Mat filledMask = cv::Mat::zeros(openMask.size(), CV_8UC1);
-
-
-    double largestAreaPost = 0;
-    int index = -1;
-    // Fill the contours of the shapes in the filled mask
-    for (int i = 0; i < contours.size(); i ++) {
-        double area = cv::contourArea(contours[i]);
-            if (area > largestAreaPost) {
-                largestAreaPost = area;
-                index = i;
-            }    
-    }
-
-    if (index != -1) 
-        cv::fillPoly(filledMask, contours[index], cv::Scalar(1));
-    
-    mask = filledMask;
-}
-
-cv::Mat thresholdBGR(const cv::Mat& image, const cv::Scalar& lowerThreshold, const cv::Scalar& upperThreshold) {
-    // Create a binary mask using BGR thresholds
-    cv::Mat mask;
-    cv::inRange(image, lowerThreshold, upperThreshold, mask);
-
-    // Apply the mask to the original image
-    cv::Mat result;
-    cv::bitwise_and(image, image, result, mask);
-
-    return mask;
-}
-
-cv::Mat RefinePastaTomato(cv::Mat src, cv::Mat mask) {
-    cv::Mat workingFood;
-    cv::bitwise_and(src, src, workingFood, mask);
-    cv::imshow("workingFood", workingFood);  cv::waitKey();
-    
-    // Split the image into individual BGR channels
-    std::vector<cv::Mat> channels;
-    cv::split(workingFood, channels);
-
-    // Keep only the red channel
-    cv::Mat redChannel = channels[2];
-
-
-
-    cv::Mat thresholdedRedChannel = redChannel > 160;
-    cv::Mat bgrThresholded;
-    cv::bitwise_and(workingFood, workingFood, bgrThresholded, thresholdedRedChannel);
-    
-    //cv::imshow("thresholdedRedChannel", thresholdedRedChannel);
-
-
-    int kernelSizeClosing = 3;
-    cv::Mat kernelClosing = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(kernelSizeClosing, kernelSizeClosing));
-    // Perform dilation followed by erosion (closing operation)
-    cv::Mat closingMask;
-    cv::morphologyEx(thresholdedRedChannel, closingMask, cv::MORPH_CLOSE, kernelClosing, cv::Point(1, 1), 5);
-    cv::Mat closingImage;
-    cv::bitwise_and(workingFood, workingFood, closingImage, closingMask);
-
-
-    //cv::imshow("closingMask", closingMask);
-
-
-
-
-
-    // Find contours in the binary mask
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(closingMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-    // Create a new image to hold the filled shapes
-    cv::Mat filledMask = cv::Mat::zeros(closingMask.size(), CV_8UC1);
-
-
-    double largestAreaPost = 0;
-    int index = -1;
-    // Fill the contours of the shapes in the filled mask
-    for (int i = 0; i < contours.size(); i ++) {
-        double area = cv::contourArea(contours[i]);
-            if (area > largestAreaPost) {
-                largestAreaPost = area;
-                index = i;
-            }    
-    }
-
-    if (index != -1) 
-        cv::fillPoly(filledMask, contours[index], cv::Scalar(255));
-
-
-    //cv::imshow("filledMask", filledMask);
-    
-    //cv::imshow("bgrThresholded", bgrThresholded);
-
-    cv::waitKey();
-    return bgrThresholded ;
-}
-
-void refinePorkCutlet(cv::Mat src, cv::Mat &mask) {
-        
-    // Close the holes borders
-    int closingSize = cv::boundingRect(mask).height / 4;
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(closingSize, closingSize));
-    morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
-
-    // Find contours in the mask
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-    // Sort contours based on area
-    std::sort(contours.begin(), contours.end(), [](const std::vector<cv::Point>& contour1, const std::vector<cv::Point>& contour2) {
-        return cv::contourArea(contour1) > cv::contourArea(contour2);
-    });
-
-    int n = 1;
-    std::vector<std::vector<cv::Point>> keptContours;
-    keptContours = std::vector<std::vector<cv::Point>>(contours.begin(), contours.begin() + std::min(n, (int) contours.size()));
-
-    mask = cv::Mat::zeros(mask.size(), CV_8UC1);
-    cv::drawContours(mask, keptContours, -1, cv::Scalar(1), cv::FILLED);
-}
-
-// test to refine segmentations of leftover
-void Tray::RefineSegmentation(const cv::Mat& src, cv::Mat& mask, int label) {
-        switch (label) {
-            case 1:
-                RefinePastaPesto(src, mask);
-                break;
-            case 2:
-                //RefinePastaTomato(traysBefore, givenFoodMatBefore);
-                //RefinePastaTomato(traysAfter, givenFoodMatAfter);
-                break;
-            case 6:
-                //refinePorkCutlet(traysBefore, mask);
-            default:
-                break;
-        }
-    }
