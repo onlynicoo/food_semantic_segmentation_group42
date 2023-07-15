@@ -1,8 +1,9 @@
-#include <map>
-#include <unordered_map>
-#include <algorithm>
-#include <set>
 #include "../include/Utils.h"
+
+#include <algorithm>
+#include <map>
+#include <set>
+#include <unordered_map>
 
 void Utils::sortVectorByFreq(std::vector<int>& values) {
     // Create frequency map
@@ -30,7 +31,6 @@ int Utils::getMostFrequentNeighbor(const std::vector<std::vector<int>>& matrix, 
     // Iterate over the neighbors
     for (int i = row - radius; i <= row + radius; i++) {
         for (int j = col - radius; j <= col + radius; j++) {
-            
             if (i < 0 || j < 0 || i >= matrix.size() || j >= matrix[0].size() || (i == row && j == col) || matrix[i][j] == -1)
                 continue;
 
@@ -52,12 +52,12 @@ void Utils::getMostFrequentMatrix(std::vector<std::vector<int>>& matrix, int rad
 
     for (int i = 0; i < matrix.size(); i++)
         for (int j = 0; j < matrix[0].size(); j++)
-                newMatrix[i][j] = Utils::getMostFrequentNeighbor(matrix, i, j, radius);
+            newMatrix[i][j] = Utils::getMostFrequentNeighbor(matrix, i, j, radius);
 
     matrix = newMatrix;
 }
 
-std::vector<int> Utils::getVectorUnion(const std::vector<int>& a, const std::vector<int>& b){
+std::vector<int> Utils::getVectorUnion(const std::vector<int>& a, const std::vector<int>& b) {
     std::vector<int> c;
     c.reserve(a.size() + b.size());
     std::copy(a.begin(), a.end(), std::back_inserter(c));
@@ -65,7 +65,7 @@ std::vector<int> Utils::getVectorUnion(const std::vector<int>& a, const std::vec
     return c;
 }
 
-std::vector<int> Utils::getVectorIntersection(const std::vector<int>& a, const std::vector<int>& b){
+std::vector<int> Utils::getVectorIntersection(const std::vector<int>& a, const std::vector<int>& b) {
     std::set<int> setB(b.begin(), b.end());
     std::vector<int> c;
     for (int i = 0; i < a.size(); i++)

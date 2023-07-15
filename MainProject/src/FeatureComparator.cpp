@@ -1,15 +1,14 @@
-#include <opencv2/opencv.hpp>
 #include "../include/FeatureComparator.h"
+
+#include <opencv2/opencv.hpp>
 
 const std::string FeatureComparator::LABEL_FEATURES_PATH = "../features/label_features.yml";
 const std::string FeatureComparator::LABEL_FEATURES_NAME = "labelFeatures";
 
 std::vector<FeatureComparator::LabelDistance> FeatureComparator::getLabelDistances(
-    const cv::Mat& labelsFeatures, std::vector<int> labelWhitelist, const cv::Mat& imgFeatures)
-{
+    const cv::Mat& labelsFeatures, std::vector<int> labelWhitelist, const cv::Mat& imgFeatures) {
     std::vector<FeatureComparator::LabelDistance> distances;
     for (int i = 0; i < labelsFeatures.rows; i++) {
-
         // Check if the label is excluded
         if (std::find(labelWhitelist.begin(), labelWhitelist.end(), i) == labelWhitelist.end())
             continue;
@@ -28,7 +27,7 @@ void FeatureComparator::getHueFeatures(const cv::Mat& img, const cv::Mat& mask, 
     // Convert to HSV
     cv::Mat hsvImg;
     std::vector<cv::Mat> hsvChannels;
-    cv::cvtColor(img, hsvImg, cv::COLOR_BGR2HSV); 
+    cv::cvtColor(img, hsvImg, cv::COLOR_BGR2HSV);
     split(hsvImg, hsvChannels);
 
     // Equalize V channel to enhance color difference
@@ -46,13 +45,13 @@ void FeatureComparator::getHueFeatures(const cv::Mat& img, const cv::Mat& mask, 
     cvtColor(modHsvImg, hsvImg, cv::COLOR_BGR2HSV);
     cv::split(hsvImg, hsvChannels);
     hueChannel = hsvChannels[0];
-    
+
     // Compute hist
     float range[] = {0, 180};
     const float* histRange[] = {range};
     cv::Mat hist;
     calcHist(&hueChannel, 1, 0, mask, hist, 1, &numFeatures, histRange);
-    
+
     // Normalize the hist
     cv::normalize(hist, hist, NORMALIZE_VALUE, cv::NORM_L1);
 
@@ -67,7 +66,6 @@ void FeatureComparator::getLBPFeatures(const cv::Mat& img, const cv::Mat& mask, 
 
     for (int y = lbp_radius; y < img.rows - lbp_radius; y++) {
         for (int x = lbp_radius; x < img.cols - lbp_radius; x++) {
-            
             // Skip not maked pixels
             if (mask.at<uchar>(y, x) == 0)
                 continue;
@@ -96,12 +94,11 @@ void FeatureComparator::getLBPFeatures(const cv::Mat& img, const cv::Mat& mask, 
 
     // Normalize the hist
     cv::normalize(hist, hist, NORMALIZE_VALUE, cv::NORM_L1);
-    
+
     features = hist.t();
 }
 
 void FeatureComparator::getCannyLBPFeatures(const cv::Mat& img, const cv::Mat& mask, int numFeatures, cv::Mat& features) {
-
     // Convert the image to grayscale
     cv::Mat grayImage;
     cv::cvtColor(img, grayImage, cv::COLOR_BGR2GRAY);
@@ -123,7 +120,7 @@ void FeatureComparator::getImageFeatures(const cv::Mat& img, const cv::Mat& mask
     getCannyLBPFeatures(img, mask, 64, cannyLBPFeatures);
 
     features = 0.6 * hueFeatures;
-    cv::hconcat(0.4 *cannyLBPFeatures, features, features);
+    cv::hconcat(0.4 * cannyLBPFeatures, features, features);
 }
 
 void FeatureComparator::writeLabelFeaturesToFile(const cv::Mat& features) {
