@@ -4,27 +4,27 @@
 #include "../include/Utils.h"
 #include "../include/Tray.h"
 
-
-std::string Tray::get_traysAfterNames() {
+std::string Tray::get_trayAfterName()
+{
     return traysAfterNames;
 }
 
 std::map<int, cv::Vec3b> InitColorMap() {
     std::map<int, cv::Vec3b> colors;
-    colors[0] = cv::Vec3b{0, 0, 0};  // Black
-    colors[1] = cv::Vec3b{0, 255, 124};  // Green
-    colors[2] = cv::Vec3b{0, 0, 255};  // Red
-    colors[3] = cv::Vec3b{255, 0, 0};  // Blue
-    colors[4] = cv::Vec3b{0, 255, 255};  // Yellow
-    colors[5] = cv::Vec3b{255, 255, 0};  // Cyan
-    colors[6] = cv::Vec3b{255, 0, 255};  // Magenta
-    colors[7] = cv::Vec3b{0, 165, 255};  // Orange
-    colors[8] = cv::Vec3b{128, 0, 128};  // Purple
+    colors[0] = cv::Vec3b{0, 0, 0};        // Black
+    colors[1] = cv::Vec3b{0, 255, 124};    // Green
+    colors[2] = cv::Vec3b{0, 0, 255};      // Red
+    colors[3] = cv::Vec3b{255, 0, 0};      // Blue
+    colors[4] = cv::Vec3b{0, 255, 255};    // Yellow
+    colors[5] = cv::Vec3b{255, 255, 0};    // Cyan
+    colors[6] = cv::Vec3b{255, 0, 255};    // Magenta
+    colors[7] = cv::Vec3b{0, 165, 255};    // Orange
+    colors[8] = cv::Vec3b{128, 0, 128};    // Purple
     colors[9] = cv::Vec3b{203, 192, 255};  // Pink
     colors[10] = cv::Vec3b{51, 102, 153};  // Brown
-    colors[11] = cv::Vec3b{128, 128, 128};  // Gray
-    colors[12] = cv::Vec3b{255, 255, 255};  // White
-    colors[13] = cv::Vec3b{128, 128, 0};  // Olive
+    colors[11] = cv::Vec3b{128, 128, 128}; // Gray
+    colors[12] = cv::Vec3b{255, 255, 255}; // White
+    colors[13] = cv::Vec3b{128, 128, 0};   // Olive
 
     return colors;
 }
@@ -34,46 +34,29 @@ void InsertBoundingBox(cv::Mat src, std::string filePath) {
     std::ofstream file(filePath, std::ios::trunc); // Open the file in append mode
 
     for (int i = 1; i < 14; i++) {
-
-        cv::Mat binaryMask = (src == i);   
+        cv::Mat binaryMask = (src == i);
 
         if (cv::countNonZero(binaryMask) == 0)
             continue;
-
+        
         cv::Rect bbox = cv::boundingRect(binaryMask);
         file << "ID: " << i << "; [" << bbox.x << ", " << bbox.y << ", " << bbox.width << ", " << bbox.height << "]\n"; // Write the new line to the file
-
-        /*
-        // Create multiple bbox
-        std::vector<std::vector<cv::Point>> contours;
-        cv::findContours(binaryMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-        
-        std::vector<cv::Rect> boundingBoxes;
-        for (size_t i = 0; i < contours.size(); i++) {
-            cv::Rect boundingBox = cv::boundingRect(contours[i]);
-            boundingBoxes.push_back(boundingBox);
-        }
-
-        if (file.is_open() && boundingBoxes.size() > 0) {
-            for (int j = 0; j < boundingBoxes.size(); j++)
-                file << "ID " << i << "; [" << boundingBoxes[j].x << ", " << boundingBoxes[j].y << ", " << boundingBoxes[j].width << ", " << boundingBoxes[j].height << "]\n"; // Write the new line to the file
-        }
-        */
     }
-    
-    file.close();
 
+    file.close();
 }
 
-std::vector<int> getLabelsFound(cv::Mat mask) {
+std::vector<int> getLabelsFound(const cv::Mat& mask) {
     std::vector<int> labelsFound;
+
     for (int i = 1; i < 14; i++)
         if (cv::countNonZero((mask == i)) > 0)
             labelsFound.push_back(i);
+    
     return labelsFound;
 }
 
-cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std::string filePath) {
+cv::Mat Tray::SegmentImage(const cv::Mat& src, std::vector<int>& labelsFound, std::string filePath) {
 
     cv::Mat segmentationMask(src.size(), CV_8UC1, cv::Scalar(0));
 
@@ -86,8 +69,10 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
     // Segment salad
     cv::Mat saladMask;
     bool saladFound = (Utils::getIndexInVector(labelsFound, SegmentFood::SALAD_LABEL) != -1);
+    
     std::vector<cv::Vec3f> saladBowls = FindFood::findSaladBowl(src, saladFound);
-    if (saladBowls.size() != 0) {
+    if (saladBowls.size() != 0)
+    {
         SegmentFood::getSaladMaskFromBowl(src, saladMask, saladBowls[0]);
         segmentationMask += saladMask;
     }
@@ -97,15 +82,16 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
     cv::Mat breadRect = FindFood::findBread(src);
     breadMask = SegmentFood::getBreadMask(src, breadRect);
     segmentationMask += breadMask;
-    
+
     // Keep labels found
     labelsFound = getLabelsFound(segmentationMask);
 
     return segmentationMask;
 }
 
-std::string ExtractTray(std::string imagePath) {
-    
+std::string ExtractTrayFromPath(std::string imagePath)
+{
+
     // Find the penultimate occurrence of '/'
     size_t lastSlashPos = imagePath.rfind('/');
     size_t penultimateSlashPos = imagePath.rfind('/', lastSlashPos - 1);
@@ -120,17 +106,19 @@ std::string ExtractTray(std::string imagePath) {
     return "../output/" + penultimatePath;
 }
 
-std::string ExtractName(std::string imagePath) {
+std::string ExtractName(std::string imagePath)
+{
 
     std::string imageName = imagePath.substr(
         imagePath.find_last_of('/') + 1,
         imagePath.find_last_of('.') - 1 - imagePath.find_last_of('/'));
 
-    return  imageName.append("_bounding_box");
+    return imageName.append("_bounding_box");
 }
 
-//should make bool and check output
-void Tray::SaveSegmentedMask(std::string path, cv::Mat src) {
+// should make bool and check output
+void Tray::SaveSegmentedMask(std::string path, cv::Mat src)
+{
 
     std::string imageName = ExtractName(path);
 
@@ -143,14 +131,14 @@ void Tray::SaveSegmentedMask(std::string path, cv::Mat src) {
     if (imageName.compare("leftover3_bounding_box") == 0)
         imageName = "leftover3";
 
-    std::string filename = ExtractTray(path) + "/" + "masks/" + imageName + ".png";
+    std::string filename = ExtractTrayFromPath(path) + "/" + "masks/" + imageName + ".png";
 
     bool success = cv::imwrite(filename, src);
-
 }
 
 // constructor that does everything
-Tray::Tray(std::string trayBefore, std::string trayAfter) {
+Tray::Tray(std::string trayBefore, std::string trayAfter)
+{
 
     cv::Mat before = cv::imread(trayBefore, cv::IMREAD_COLOR);
     cv::Mat after = cv::imread(trayAfter, cv::IMREAD_COLOR);
@@ -162,41 +150,44 @@ Tray::Tray(std::string trayBefore, std::string trayAfter) {
     traysAfter = after;
 
     std::vector<int> labelsFound;
-    traysBeforeDetected = ExtractTray(trayBefore) + "/" + "bounding_boxes/" + ExtractName(trayBefore) + ".txt";
-    traysAfterDetected = ExtractTray(trayAfter) + "/" + "bounding_boxes/" + ExtractName(trayAfter) + ".txt";
+    traysBeforeDetected = ExtractTrayFromPath(trayBefore) + "/" + "bounding_boxes/" + ExtractName(trayBefore) + ".txt";
+    traysAfterDetected = ExtractTrayFromPath(trayAfter) + "/" + "bounding_boxes/" + ExtractName(trayAfter) + ".txt";
 
     traysBeforeSegmented = SegmentImage(before, labelsFound, traysBeforeDetected);
-    traysAfterSegmented = SegmentImage(after, labelsFound,  traysAfterDetected);
+    traysAfterSegmented = SegmentImage(after, labelsFound, traysAfterDetected);
 
     InsertBoundingBox(traysBeforeSegmented, traysBeforeDetected);
     InsertBoundingBox(traysAfterSegmented, traysAfterDetected);
 
     SaveSegmentedMask(traysBeforeNames, traysBeforeSegmented);
     SaveSegmentedMask(traysAfterNames, traysAfterSegmented);
-    
 }
 
-cv::Mat SegmentedImageFromMask(cv::Mat src) {
+cv::Mat getColoredSegmentationMask(cv::Mat src)
+{
     std::map<int, cv::Vec3b> colors = InitColorMap();
     cv::Size segmentationMaskSize = src.size();
     cv::Mat segmentedImage(segmentationMaskSize, CV_8UC3, cv::Scalar(0));
-    for(int r = 0; r < src.rows; r++)
-        for(int c = 0; c < src.cols; c++)
-            if(src.at<uchar>(r,c) != 0)
-                segmentedImage.at<cv::Vec3b>(r,c) = colors[int(src.at<uchar>(r,c))];
+    for (int r = 0; r < src.rows; r++)
+        for (int c = 0; c < src.cols; c++)
+            if (src.at<uchar>(r, c) != 0)
+                segmentedImage.at<cv::Vec3b>(r, c) = colors[int(src.at<uchar>(r, c))];
     return segmentedImage;
 }
 
-cv::Mat OverimposeDetection(cv::Mat src, std::string filePath) {
+void OverimposeDetection(cv::Mat src, std::string filePath, cv::Mat &dst)
+{
 
     cv::Mat out = src.clone();
     std::map<int, cv::Vec3b> colors = InitColorMap();
 
-    std::ifstream file(filePath); 
-    
-    if (file.is_open()) {
+    std::ifstream file(filePath);
+
+    if (file.is_open())
+    {
         std::string line;
-        while (std::getline(file, line)) {
+        while (std::getline(file, line))
+        {
 
             cv::Point topLeft, bottomRight;
 
@@ -213,7 +204,8 @@ cv::Mat OverimposeDetection(cv::Mat src, std::string filePath) {
             std::vector<int> elements;
             size_t commaIndex = 0;
             size_t nextCommaIndex = elementsStr.find(",", commaIndex);
-            while (nextCommaIndex != std::string::npos) {
+            while (nextCommaIndex != std::string::npos)
+            {
                 elements.push_back(std::stoi(elementsStr.substr(commaIndex, nextCommaIndex - commaIndex)));
                 commaIndex = nextCommaIndex + 2; // Skip comma and space
                 nextCommaIndex = elementsStr.find(",", commaIndex);
@@ -221,31 +213,33 @@ cv::Mat OverimposeDetection(cv::Mat src, std::string filePath) {
             elements.push_back(std::stoi(elementsStr.substr(commaIndex))); // Last element
 
             // Assigning values to points variables
-            if (elements.size() == 4) {
+            if (elements.size() == 4)
+            {
                 topLeft.x = elements[0];
                 topLeft.y = elements[1];
                 bottomRight.x = elements[0] + elements[2];
                 bottomRight.y = elements[1] + elements[3];
             }
 
-            cv::rectangle(out, topLeft, bottomRight, colors[foodId], 10);  // Draw the rectangle on the image
+            cv::rectangle(out, topLeft, bottomRight, colors[foodId], 10); // Draw the rectangle on the image
         }
     }
-    return out;
+    dst = out;
 }
 
-void Tray::PrintInfo() {
+void Tray::ShowTray()
+{
 
     std::string window_name = "info tray";
 
     cv::Mat imageGrid, imageRow;
-    cv::Size stdSize(0,0);
+    cv::Size stdSize(0, 0);
     stdSize = traysBefore.size();
 
-    cv::Mat tmp1_1, tmp1_2, tmp1_3, tmp2_1, tmp2_2, tmp2_3; 
+    cv::Mat tmp1_1, tmp1_2, tmp1_3, tmp2_1, tmp2_2, tmp2_3;
 
-    cv::Mat colorBeforeSegmented = SegmentedImageFromMask(traysBeforeSegmented);
-    cv::Mat colorAfterSegmented = SegmentedImageFromMask(traysAfterSegmented);
+    cv::Mat colorBeforeSegmented = getColoredSegmentationMask(traysBeforeSegmented);
+    cv::Mat colorAfterSegmented = getColoredSegmentationMask(traysAfterSegmented);
 
     tmp1_1 = traysBefore.clone();
 
@@ -256,15 +250,20 @@ void Tray::PrintInfo() {
 
     std::vector<cv::Vec3f> saladBefore = FindFood::findSaladBowl(traysBefore, false);
     std::vector<cv::Vec3f> saladAfter;
-        saladAfter = FindFood::findSaladBowl(traysAfter, false);
-    if (saladBefore.size() == 0) {
-    }   
-    else {
+    saladAfter = FindFood::findSaladBowl(traysAfter, false);
+    if (saladBefore.size() == 0)
+    {
+    }
+    else
+    {
         saladAfter = FindFood::findSaladBowl(traysAfter, true);
     }
 
-    resize(OverimposeDetection(traysBefore, traysBeforeDetected), tmp1_2, stdSize);
-    resize(OverimposeDetection(traysAfter, traysAfterDetected), tmp2_2, stdSize);
+    cv::Mat imgWithDetectionBoxesBefore, imgWithDetectionBoxesAfter;
+    OverimposeDetection(traysBefore, traysBeforeDetected, imgWithDetectionBoxesBefore);
+    OverimposeDetection(traysAfter, traysAfterDetected, imgWithDetectionBoxesAfter);
+    resize(imgWithDetectionBoxesBefore, tmp1_2, stdSize);
+    resize(imgWithDetectionBoxesAfter, tmp2_2, stdSize);
     resize(colorBeforeSegmented, tmp1_3, stdSize);
     resize(colorAfterSegmented, tmp2_3, stdSize);
 
@@ -286,21 +285,4 @@ void Tray::PrintInfo() {
     imshow(window_name, imageGrid);
 
     cv::waitKey(0);
-}
-
-
-void Tray::PrintSaladPlate() {
-
-    std::vector<cv::Vec3f> saladBefore = FindFood::findSaladBowl(traysBefore, false);
-    std::vector<cv::Vec3f> saladAfter;
-    if (saladBefore.size() == 0)
-        saladAfter = FindFood::findSaladBowl(traysAfter, false);
-    else 
-        saladAfter = FindFood::findSaladBowl(traysAfter, true);
-
-    cv::imshow("before", FindFood::drawPlates(traysBefore, saladBefore)); 
-    cv::imshow("after", FindFood::drawPlates(traysAfter, saladAfter)); 
-    
-    cv::waitKey();
-
 }

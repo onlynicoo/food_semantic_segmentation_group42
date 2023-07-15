@@ -3,10 +3,11 @@
 #include <fstream>
 
 //
+/*
 std::string Tray::get_traysAfterNames() {
     return traysAfterNames;
 }        
-
+*/
 cv::Mat Tray::SegmentFoods(cv::Mat src) {
     cv::Mat out;
     // ... add code to detect food and return an image with bounding boxes

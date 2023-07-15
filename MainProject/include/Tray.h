@@ -33,19 +33,17 @@ class Tray {
         void FindPlates(const cv::Mat);
         
         //
-        cv::Mat SegmentImage(const cv::Mat, std::vector<int>&, std::string);
+        cv::Mat SegmentImage(const cv::Mat&, std::vector<int>&, std::string);
         
         //
         cv::Mat SegmentFoods(const cv::Mat);
 
         //
-        std::string get_traysAfterNames();
+        std::string get_trayAfterName();
 
         //
         void PrintSaladPlate();
         
-        void PrintInfo();
+        void ShowTray();
         void RefineSegmentation(const cv::Mat&, cv::Mat&, int);
-        //void RefineSegmentation();
-
 };

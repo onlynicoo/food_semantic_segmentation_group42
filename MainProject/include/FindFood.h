@@ -32,5 +32,5 @@ class FindFood {
         static std::vector<cv::Vec3f> findPlates(cv::Mat src);
         static cv::Mat drawPlates(const cv::Mat src, const std::vector<cv::Vec3f> circles);
         static std::vector<cv::Vec3f> findSaladBowl(cv::Mat src, bool saladFound);
-        static cv::Mat findBread(cv::Mat src);
+        static cv::Mat findBread(const cv::Mat& src);
 };

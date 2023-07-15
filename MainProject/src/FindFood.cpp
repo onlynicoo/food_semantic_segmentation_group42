@@ -110,7 +110,7 @@ std::vector<cv::Vec3f> FindFood::findSaladBowl(cv::Mat src, bool saladFound) {
     }
 }
 
-cv::Mat FindFood::findBread(cv::Mat src) {
+cv::Mat FindFood::findBread(const cv::Mat& src) {
 
     // used as base img
     cv::Mat maskedImage = src.clone();
