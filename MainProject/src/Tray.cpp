@@ -46,15 +46,15 @@ std::map<int, cv::Vec3b> initColorMap() {
 }
 
 /**
- * The function "insertBoundingBox" takes a binary mask image and a file path as input, and writes the
- * bounding box coordinates of each object in the mask to the specified file.
+ * The function "writeBoundingBoxFile" takes a binary mask image and a file path as input, and writes
+ * the bounding box coordinates for each label in the mask to the specified file.
  * 
  * @param mask The "mask" parameter is a cv::Mat object representing a binary mask. It is used to
- * identify regions of interest in an image. Each region is assigned a unique ID from 1 to 13.
- * @param filePath The `filePath` parameter is a string that represents the path to the file where the
- * bounding box information will be written.
+ * extract regions of interest (ROIs) from an image.
+ * @param filePath The `filePath` parameter is a string that specifies the path and name of the file
+ * where the bounding box information will be written.
  */
-void insertBoundingBox(const cv::Mat& mask, std::string filePath) {
+void writeBoundingBoxFile(const cv::Mat& mask, std::string filePath) {
 
     std::ofstream file(filePath, std::ios::trunc); // Open the file in append mode
 
@@ -236,8 +236,8 @@ Tray::Tray(const std::string& trayBefore, const std::string& trayAfter) {
     segmentImage(before, trayBeforeSegmentationMask, labelsFound, trayBeforeBoundingBoxesPath);
     segmentImage(after, trayAfterSegmentationMask, labelsFound, trayAfterBoundingBoxesPath);
 
-    insertBoundingBox(trayBeforeSegmentationMask, trayBeforeBoundingBoxesPath);
-    insertBoundingBox(trayAfterSegmentationMask, trayAfterBoundingBoxesPath);
+    writeBoundingBoxFile(trayBeforeSegmentationMask, trayBeforeBoundingBoxesPath);
+    writeBoundingBoxFile(trayAfterSegmentationMask, trayAfterBoundingBoxesPath);
 
     saveSegmentedMask(trayBeforePath, trayBeforeSegmentationMask);
     saveSegmentedMask(trayAfterPath, trayAfterSegmentationMask);
