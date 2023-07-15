@@ -1,19 +1,34 @@
-#include "../include/SegmentFood.h"
+#include "../include/FoodSegmenter.h"
 
 #include <opencv2/opencv.hpp>
 
 #include "../include/FeatureComparator.h"
 #include "../include/Utils.h"
 
-const std::vector<int> SegmentFood::FIRST_PLATES_LABELS{1, 2, 3, 4, 5};
-const std::vector<int> SegmentFood::SECOND_PLATES_LABELS{6, 7, 8, 9};
-const std::vector<int> SegmentFood::SIDE_DISHES_LABELS{10, 11};
-const std::string SegmentFood::LABEL_NAMES[] = {
+const std::vector<int> FoodSegmenter::FIRST_PLATES_LABELS{1, 2, 3, 4, 5};
+const std::vector<int> FoodSegmenter::SECOND_PLATES_LABELS{6, 7, 8, 9};
+const std::vector<int> FoodSegmenter::SIDE_DISHES_LABELS{10, 11};
+const std::string FoodSegmenter::LABEL_NAMES[] = {
     "0. Background", "1. pasta with pesto", "2. pasta with tomato sauce", "3. pasta with meat sauce",
     "4. pasta with clams and mussels", "5. pilaw rice with peppers and peas", "6. grilled pork cutlet",
     "7. fish cutlet", "8. rabbit", "9. seafood salad", "10. beans", "11. basil potatoes", "12. salad", "13. bread"};
 
-void SegmentFood::getFoodMaskFromPlate(const cv::Mat& src, cv::Mat& mask, cv::Vec3f plate) {
+/**
+ * The function `getFoodMaskFromPlate` takes an input image, plate coordinates, and radius, and returns
+ * a binary mask of the food items on the plate.
+ * 
+ * @param src The source image from which the food mask is to be extracted. It should be a 3-channel
+ * BGR image.
+ * @param mask The "mask" parameter is an output parameter of type cv::Mat. It is used to store the
+ * binary mask image that represents the segmented food regions on the plate.
+ * @param plate The plate parameter is a vector of three elements representing the center coordinates
+ * and radius of the plate. The first element (plate[0]) represents the x-coordinate of the center, the
+ * second element (plate[1]) represents the y-coordinate of the center, and the third element
+ * (plate[2])
+ * @return Nothing is being returned from this function. The function is modifying the `mask` parameter
+ * passed by reference.
+ */
+void FoodSegmenter::getFoodMaskFromPlate(const cv::Mat& src, cv::Mat& mask, cv::Vec3f plate) {
     cv::Point center(plate[0], plate[1]);
     int radius = plate[2];
 
@@ -40,7 +55,7 @@ void SegmentFood::getFoodMaskFromPlate(const cv::Mat& src, cv::Mat& mask, cv::Ve
     cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
     // Check if there is a big area and remove the small areas (w.r.t. the plate area)
-    double plateArea = SegmentFood::PI * std::pow(radius, 2);
+    double plateArea = FoodSegmenter::PI * std::pow(radius, 2);
     bool foundBigArea = false;
     for (int i = 0; i < contours.size(); i++) {
         float area = cv::contourArea(contours[i]);
@@ -87,7 +102,21 @@ void SegmentFood::getFoodMaskFromPlate(const cv::Mat& src, cv::Mat& mask, cv::Ve
     morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
 }
 
-void SegmentFood::getFoodMaskFromPlates(
+/**
+ * The function `getFoodMaskFromPlates` takes an input image, a list of plate positions, and a list of
+ * labels, and returns a mask indicating the regions of the image that contain food.
+ * 
+ * @param src The source image from which the food masks will be extracted. It is of type cv::Mat.
+ * @param mask The `mask` parameter is an output parameter of type `cv::Mat`. It is used to store the
+ * segmentation mask of the food in the input image. The segmentation mask is a binary image where the
+ * pixels belonging to the food are set to non-zero values, and the pixels not belonging to the
+ * @param plates A vector of cv::Vec3f representing the plates detected in the image. Each cv::Vec3f
+ * contains the center coordinates (x, y) and the radius of the plate.
+ * @param labelsFound The parameter "labelsFound" is a vector of integers that represents the labels of
+ * the food items that have been found in the image.
+ * @return Nothing is being returned. The function is void, meaning it does not return any value.
+ */
+void FoodSegmenter::getFoodMaskFromPlates(
     const cv::Mat& src, cv::Mat& mask, std::vector<cv::Vec3f> plates, std::vector<int> labelsFound) {
     cv::Mat segmentationMask(src.size(), CV_8UC1, cv::Scalar(0));
 
@@ -105,7 +134,7 @@ void SegmentFood::getFoodMaskFromPlates(
     for (int i = 0; i < plates.size(); i++) {
         cv::Mat tmpMask;
 
-        SegmentFood::getFoodMaskFromPlate(src, tmpMask, plates[i]);
+        FoodSegmenter::getFoodMaskFromPlate(src, tmpMask, plates[i]);
 
         // Do not consider empty plate masks
         if (cv::countNonZero(tmpMask) == 0) {
@@ -121,15 +150,6 @@ void SegmentFood::getFoodMaskFromPlates(
         FeatureComparator::getImageFeatures(src, tmpMask, patchFeatures);
         platesLabelDistances.push_back(FeatureComparator::getLabelDistances(labels, allowedLabels, patchFeatures));
     }
-
-    /*
-    // Print label distances
-    for (int j = 0; j < platesLabelDistances.size(); j++) {
-        for (int k = 0; k < platesLabelDistances[j].size(); k++)
-            std::cout << platesLabelDistances[j][k].label << " " << platesLabelDistances[j][k].distance << " - ";
-        std::cout << std::endl;
-    }
-    */
 
     // Choose best labels such that if there are more plates, they are one first and one second plate
     if (platesLabelDistances.size() > 1) {
@@ -195,7 +215,7 @@ void SegmentFood::getFoodMaskFromPlates(
         // If it is a first plate, we have finished
         if (Utils::getIndexInVector(FIRST_PLATES_LABELS, foodLabel) != -1) {
             // Refine segmentation
-            SegmentFood::refineMask(src, platesMasks[i], foodLabel);
+            FoodSegmenter::refineMask(src, platesMasks[i], foodLabel);
 
             // Add to segmentation mask
             for (int r = 0; r < segmentationMask.rows; r++)
@@ -216,7 +236,7 @@ void SegmentFood::getFoodMaskFromPlates(
             cv::Mat croppedMask = tmpMask(bbox).clone();
 
             // Split mask into a grid of smaller masks
-            int BIG_WINDOW_SIZE = SegmentFood::BIG_WINDOW_SIZE;
+            int BIG_WINDOW_SIZE = FoodSegmenter::BIG_WINDOW_SIZE;
             int windowSize = std::min(BIG_WINDOW_SIZE, std::min(croppedMask.rows, croppedMask.cols));
             std::vector<int> gridLabels;
 
@@ -231,14 +251,6 @@ void SegmentFood::getFoodMaskFromPlates(
 
                     cv::Mat curMask = cv::Mat::zeros(tmpMask.size(), tmpMask.type());
                     submask.copyTo(curMask(bbox)(windowRect));
-
-                    /*
-                    // Print each masked window
-                    cv::Mat masked;
-                    cv::bitwise_and(src, src, masked, curMask);
-                    cv::imshow("masked", masked);
-                    cv::waitKey();
-                    */
 
                     // Find a label for each submask
                     cv::Mat patchFeatures;
@@ -261,16 +273,8 @@ void SegmentFood::getFoodMaskFromPlates(
             if (foundSideDishes.size() > 1)
                 keptLabels.push_back(foundSideDishes[1]);
 
-            /*
-            // Print kept labels
-            std::cout << "Kept labels: ";
-            for (int j = 0; j < keptLabels.size(); j++)
-                std::cout << keptLabels[j] << " ";
-            std::cout << std::endl;
-            */
-
             // Use smaller submasks for a better segmentation results
-            int SMALL_WINDOW_SIZE = SegmentFood::SMALL_WINDOW_SIZE;
+            int SMALL_WINDOW_SIZE = FoodSegmenter::SMALL_WINDOW_SIZE;
             windowSize = std::min(SMALL_WINDOW_SIZE, std::min(croppedMask.rows, croppedMask.cols));
 
             // Create a matrix of the assigned labels
@@ -382,7 +386,7 @@ void SegmentFood::getFoodMaskFromPlates(
                 foodLabel = keptLabels[j];
 
                 // Refine segmentation
-                SegmentFood::refineMask(src, platesMasks[i], foodLabel);
+                FoodSegmenter::refineMask(src, platesMasks[i], foodLabel);
 
                 for (int r = 0; r < segmentationMask.rows; r++)
                     for (int c = 0; c < segmentationMask.cols; c++)
@@ -397,7 +401,18 @@ void SegmentFood::getFoodMaskFromPlates(
     mask = segmentationMask;
 }
 
-void SegmentFood::getSaladMaskFromBowl(const cv::Mat& src, cv::Mat& mask, cv::Vec3f bowl) {
+/**
+ * The function `getSaladMaskFromBowl` takes an input image, a bowl position, and returns a binary mask
+ * of the salad in the image.
+ * 
+ * @param src The source image from which the salad mask will be extracted. It should be a 3-channel
+ * BGR image.
+ * @param mask The `mask` parameter is an output parameter of type `cv::Mat&`, which is a reference to
+ * a `cv::Mat` object. It is used to store the resulting salad mask.
+ * @param bowl The bowl parameter is a vector of three elements (cv::Vec3f) representing the center
+ * coordinates (x, y) and the radius of the bowl.
+ */
+void FoodSegmenter::getSaladMaskFromBowl(const cv::Mat& src, cv::Mat& mask, cv::Vec3f bowl) {
     cv::Point center(bowl[0], bowl[1]);
     int radius = bowl[2];
 
@@ -429,7 +444,7 @@ void SegmentFood::getSaladMaskFromBowl(const cv::Mat& src, cv::Mat& mask, cv::Ve
     cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
     // Remove the small areas (w.r.t. the bowl area)
-    double bowlArea = SegmentFood::PI * std::pow(radius, 2);
+    double bowlArea = FoodSegmenter::PI * std::pow(radius, 2);
     for (int i = 0; i < contours.size(); i++) {
         float area = cv::contourArea(contours[i]);
         if (area < bowlArea * 0.001) {
@@ -442,7 +457,21 @@ void SegmentFood::getSaladMaskFromBowl(const cv::Mat& src, cv::Mat& mask, cv::Ve
     cv::drawContours(mask, contours, -1, cv::Scalar(SALAD_LABEL), cv::FILLED);
 }
 
-void SegmentFood::getBreadMask(const cv::Mat& src, const cv::Mat& breadArea, cv::Mat& breadMask) {
+/**
+ * The function `getBreadMask` takes an input image and a bread area mask, and generates a binary mask
+ * that represents the bread region in the image.
+ * 
+ * @param src The input image on which the segmentation will be performed.
+ * @param breadArea The `breadArea` parameter is a binary image that represents the area where the
+ * bread is located in the input image (`src`). It is used as a mask to segment the bread from the rest
+ * of the image.
+ * @param breadMask The `breadMask` parameter is an output parameter of type `cv::Mat`. It is used to
+ * store the binary mask of the bread area in the input image. The mask will have the same size as the
+ * input image and will contain white pixels (255) where the bread is present and black
+ * @return The function does not return a value. It modifies the `breadMask` parameter, which is passed
+ * by reference.
+ */
+void FoodSegmenter::getBreadMask(const cv::Mat& src, const cv::Mat& breadArea, cv::Mat& breadMask) {
     int kernelSizeErosion = 5;  // Adjust the size according to your needs
     cv::Mat kernelErosion = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(kernelSizeErosion, kernelSizeErosion));
     cv::Mat erodedMask;
@@ -496,7 +525,17 @@ void SegmentFood::getBreadMask(const cv::Mat& src, const cv::Mat& breadArea, cv:
         cv::fillPoly(breadMask, contours[index], cv::Scalar(BREAD_LABEL));
 }
 
-void SegmentFood::refinePestoPasta(const cv::Mat& src, cv::Mat& mask) {
+/**
+ * The function refines a given mask for identifying pesto pasta in an image by applying various image
+ * processing techniques.
+ * 
+ * @param src The `src` parameter is a `cv::Mat` object representing the source image. It is used to
+ * perform various image processing operations.
+ * @param mask The "mask" parameter is a binary image that represents the region of interest in the
+ * source image. It is passed by reference and will be modified by the function to contain the refined
+ * mask after segmentation.
+ */
+void FoodSegmenter::refinePestoPasta(const cv::Mat& src, cv::Mat& mask) {
     cv::Mat workingFood;
     cv::Mat helperMask = mask.clone();
     cv::Mat fullSizeMask(src.rows, src.cols, CV_8UC1, cv::Scalar(1));
@@ -575,7 +614,17 @@ void SegmentFood::refinePestoPasta(const cv::Mat& src, cv::Mat& mask) {
     mask = filledMask;
 }
 
-void SegmentFood::refineTomatoPasta(const cv::Mat& src, cv::Mat& mask) {
+/**
+ * The function `refineTomatoPasta` refines a given mask by performing various image processing
+ * operations to isolate the tomato pasta in the source image.
+ * 
+ * @param src The source image on which the segmentation is performed. It is of type cv::Mat, which is
+ * a matrix data structure in OpenCV representing an image.
+ * @param mask The "mask" parameter is a reference to a cv::Mat object. It is used to store the
+ * resulting mask after refining the tomato pasta image. The mask is a binary image where white pixels
+ * represent the regions of interest (tomato pasta) and black pixels represent the background.
+ */
+void FoodSegmenter::refineTomatoPasta(const cv::Mat& src, cv::Mat& mask) {
     cv::Mat workingFood;
     cv::bitwise_and(src, src, workingFood, mask);
     // cv::imshow("workingFood", workingFood);  cv::waitKey();
@@ -631,7 +680,18 @@ void SegmentFood::refineTomatoPasta(const cv::Mat& src, cv::Mat& mask) {
     mask = filledMask;
 }
 
-void SegmentFood::refinePorkCutlet(const cv::Mat& src, cv::Mat& mask) {
+/**
+ * The function refines a mask of a pork cutlet by closing holes, finding contours, sorting them by
+ * area, and keeping the top n contours.
+ * 
+ * @param src The source image from which the pork cutlet is segmented.
+ * @param mask The `mask` parameter is a binary image that represents the segmentation mask of a pork
+ * cutlet in the input image `src`. The mask is initially provided as an input and will be refined and
+ * updated within the `refinePorkCutlet` function.
+ * @return Nothing is being returned. The function is modifying the "mask" parameter passed by
+ * reference.
+ */
+void FoodSegmenter::refinePorkCutlet(const cv::Mat& src, cv::Mat& mask) {
     // Close the holes borders
     int closingSize = cv::boundingRect(mask).height / 4;
     cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(closingSize, closingSize));
@@ -654,7 +714,18 @@ void SegmentFood::refinePorkCutlet(const cv::Mat& src, cv::Mat& mask) {
     cv::drawContours(mask, keptContours, -1, cv::Scalar(1), cv::FILLED);
 }
 
-void SegmentFood::refineMask(const cv::Mat& src, cv::Mat& mask, int label) {
+/**
+ * The function `refineMask` takes an input image and a mask, and refines the mask based on the
+ * specified label.
+ * 
+ * @param src The source image on which the mask is based.
+ * @param mask The `mask` parameter is a `cv::Mat` object that represents a binary mask image. It is
+ * used to segment the food in the input image `src`. The mask should have the same size as the input
+ * image, where the pixels corresponding to the food region are set to 255 (
+ * @param label The "label" parameter is an integer value that represents the type of food segment that
+ * needs to be refined.
+ */
+void FoodSegmenter::refineMask(const cv::Mat& src, cv::Mat& mask, int label) {
     switch (label) {
         case 1:
             refinePestoPasta(src, mask);

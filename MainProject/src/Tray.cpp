@@ -2,8 +2,8 @@
 
 #include <fstream>
 
-#include "../include/FindFood.h"
-#include "../include/SegmentFood.h"
+#include "../include/FoodFinder.h"
+#include "../include/FoodSegmenter.h"
 #include "../include/Utils.h"
 
 /**
@@ -112,25 +112,25 @@ cv::Mat Tray::segmentImage(const cv::Mat& src, std::vector<int>& labelsFound, co
 
     // Segment food in plates
     cv::Mat plateFoodsMask;
-    std::vector<cv::Vec3f> foodPlates = FindFood::findPlates(src);
-    SegmentFood::getFoodMaskFromPlates(src, plateFoodsMask, foodPlates, labelsFound);
+    std::vector<cv::Vec3f> foodPlates = FoodFinder::findPlates(src);
+    FoodSegmenter::getFoodMaskFromPlates(src, plateFoodsMask, foodPlates, labelsFound);
     segmentationMask += plateFoodsMask;
 
     // Segment salad
     cv::Mat saladMask;
-    bool saladFound = (Utils::getIndexInVector(labelsFound, SegmentFood::SALAD_LABEL) != -1);
+    bool saladFound = (Utils::getIndexInVector(labelsFound, FoodSegmenter::SALAD_LABEL) != -1);
 
-    std::vector<cv::Vec3f> saladBowls = FindFood::findSaladBowl(src, saladFound);
+    std::vector<cv::Vec3f> saladBowls = FoodFinder::findSaladBowl(src, saladFound);
     if (saladBowls.size() != 0) {
-        SegmentFood::getSaladMaskFromBowl(src, saladMask, saladBowls[0]);
+        FoodSegmenter::getSaladMaskFromBowl(src, saladMask, saladBowls[0]);
         segmentationMask += saladMask;
     }
 
     // Segment bread
     cv::Mat breadArea;
-    FindFood::findBread(src, breadArea);
+    FoodFinder::findBread(src, breadArea);
     cv::Mat breadMask;
-    SegmentFood::getBreadMask(src, breadArea, breadMask);
+    FoodSegmenter::getBreadMask(src, breadArea, breadMask);
     segmentationMask += breadMask;
 
     // Store labels found
@@ -351,11 +351,11 @@ void Tray::showTray() {
     // resize(OverimposeDetection(traysBefore, traysBeforeDetected), tmp1_2, stdSize);
     // resize(OverimposeDetection(traysAfter, traysAfterDetected), tmp2_2, stdSize);
 
-    std::vector<cv::Vec3f> saladBefore = FindFood::findSaladBowl(trayBeforeImage, false);
+    std::vector<cv::Vec3f> saladBefore = FoodFinder::findSaladBowl(trayBeforeImage, false);
     std::vector<cv::Vec3f> saladAfter;
-    saladAfter = FindFood::findSaladBowl(trayAfterImage, false);
+    saladAfter = FoodFinder::findSaladBowl(trayAfterImage, false);
     if (saladBefore.size() != 0) {
-        saladAfter = FindFood::findSaladBowl(trayAfterImage, true);
+        saladAfter = FoodFinder::findSaladBowl(trayAfterImage, true);
     }
 
     cv::Mat imgWithDetectionBoxesBefore, imgWithDetectionBoxesAfter;

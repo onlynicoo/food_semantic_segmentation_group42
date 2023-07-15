@@ -1,9 +1,15 @@
-#include "../include/FindFood.h"
+#include "../include/FoodFinder.h"
 
 #include <opencv2/opencv.hpp>
 
-// Find plate image
-std::vector<cv::Vec3f> FindFood::findPlates(const cv::Mat& src) {
+/**
+ * The function `findPlates` takes an input image, detects circles representing plates and salad, and
+ * returns the coordinates and radii of the detected plates.
+ * 
+ * @param src The input image from which plates are to be detected.
+ * @return a vector of cv::Vec3f objects, which represents the detected plates in the input image.
+ */
+std::vector<cv::Vec3f> FoodFinder::findPlates(const cv::Mat& src) {
     cv::Mat src_gray;
     cv::cvtColor(src, src_gray, cv::COLOR_BGR2GRAY);
 
@@ -57,7 +63,16 @@ std::vector<cv::Vec3f> FindFood::findPlates(const cv::Mat& src) {
     return actual_plates;
 }
 
-std::vector<cv::Vec3f> FindFood::findSaladBowl(const cv::Mat& src, bool saladFound) {
+/**
+ * The function `findSaladBowl` takes an input image, converts it to grayscale, and uses the Hough
+ * Circle Transform to detect circles in the image that represent a salad bowl, refining the detection
+ * if necessary.
+ * 
+ * @param src The input image on which the salad bowl needs to be found.
+ * @param saladFound A boolean variable indicating whether a salad has been found previously or not.
+ * @return The function `findSaladBowl` returns a vector of `cv::Vec3f` objects.
+ */
+std::vector<cv::Vec3f> FoodFinder::findSaladBowl(const cv::Mat& src, bool saladFound) {
     cv::Mat src_gray;
     cv::cvtColor(src, src_gray, cv::COLOR_BGR2GRAY);
 
@@ -99,12 +114,22 @@ std::vector<cv::Vec3f> FindFood::findSaladBowl(const cv::Mat& src, bool saladFou
     }
 }
 
-void FindFood::findBread(const cv::Mat& src, cv::Mat& breadArea) {
+/**
+ * The function `findBread` takes an input image, performs various image processing operations to
+ * identify bread areas, and outputs a binary mask indicating the location of the bread.
+ * 
+ * @param src The source image on which the bread is to be found. It is of type cv::Mat, which is a
+ * matrix data structure used in OpenCV to represent images.
+ * @param breadArea The `breadArea` parameter is an output parameter of type `cv::Mat&`, which is a
+ * reference to a `cv::Mat` object. This parameter is used to store the result of the bread detection
+ * algorithm.
+ */
+void FoodFinder::findBread(const cv::Mat& src, cv::Mat& breadArea) {
     // used as base img
     cv::Mat maskedImage = src.clone();
 
-    std::vector<cv::Vec3f> plates = FindFood::findPlates(src);
-    std::vector<cv::Vec3f> salad = FindFood::findSaladBowl(src, true);
+    std::vector<cv::Vec3f> plates = FoodFinder::findPlates(src);
+    std::vector<cv::Vec3f> salad = FoodFinder::findSaladBowl(src, true);
 
     // Draw the circle
     for (size_t i = 0; i < plates.size(); i++) {

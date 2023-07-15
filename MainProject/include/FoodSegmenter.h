@@ -1,7 +1,7 @@
 #pragma once
 #include <opencv2/opencv.hpp>
 
-class SegmentFood {
+class FoodSegmenter {
     private:
         static constexpr int SMALL_WINDOW_SIZE = 50;
         static constexpr int BIG_WINDOW_SIZE = 150;

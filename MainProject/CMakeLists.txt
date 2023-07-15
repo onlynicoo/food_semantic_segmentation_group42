@@ -27,9 +27,9 @@ add_library(FeatureComparator
     src/FeatureComparator.cpp
 )
 
-add_library(FindFood
-    include/FindFood.h
-    src/FindFood.cpp
+add_library(FoodFinder
+    include/FoodFinder.h
+    src/FoodFinder.cpp
 )
 
 add_library(MetricsCalculation
@@ -37,9 +37,9 @@ add_library(MetricsCalculation
     src/MetricsCalculation.cpp
 )
 
-add_library(SegmentFood
-    include/SegmentFood.h
-    src/SegmentFood.cpp
+add_library(FoodSegmenter
+    include/FoodSegmenter.h
+    src/FoodSegmenter.cpp
 )
 
 add_library(Test
@@ -59,17 +59,17 @@ add_library(Utils
 
 # Link libraries
 target_link_libraries(FeatureComparator ${OpenCV_LIBS})
-target_link_libraries(FindFood ${OpenCV_LIBS})
+target_link_libraries(FoodFinder ${OpenCV_LIBS})
 target_link_libraries(MetricsCalculation ${OpenCV_LIBS})
-target_link_libraries(SegmentFood ${OpenCV_LIBS})
+target_link_libraries(FoodSegmenter ${OpenCV_LIBS})
 target_link_libraries(Test ${OpenCV_LIBS})
 
 target_link_libraries(LabelFeatures FeatureComparator)
 target_link_libraries(main Tray)
 target_link_libraries(mainTest Tray Test)
-target_link_libraries(SegmentFood FeatureComparator Utils)
+target_link_libraries(FoodSegmenter FeatureComparator Utils)
 target_link_libraries(Test Tray MetricsCalculation)
-target_link_libraries(Tray FindFood SegmentFood Utils)
+target_link_libraries(Tray FoodFinder FoodSegmenter Utils)
 
 # Create main output folder
 file(MAKE_DIRECTORY output)
