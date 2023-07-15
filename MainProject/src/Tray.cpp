@@ -7,23 +7,23 @@
 #include "../include/Utils.h"
 
 /**
- * The function "get_trayAfterPath" returns the trayAfterPath string.
+ * The function "getTrayAfterPath" returns the trayAfterPath string.
  * 
  * @return a string value, which is the value of the variable "trayAfterPath".
  */
-std::string Tray::get_trayAfterPath() {
+std::string Tray::getTrayAfterPath() {
     return trayAfterPath;
 }
 
 
 /**
- * The function `InitColorMap` initializes a map with integer keys and `cv::Vec3b` values representing
+ * The function `initColorMap` initializes a map with integer keys and `cv::Vec3b` values representing
  * different colors.
  * 
- * @return The function `InitColorMap` returns a `std::map<int, cv::Vec3b>` object, which is a map with
+ * @return The function `initColorMap` returns a `std::map<int, cv::Vec3b>` object, which is a map with
  * integer keys and `cv::Vec3b` values.
  */
-std::map<int, cv::Vec3b> InitColorMap() {
+std::map<int, cv::Vec3b> initColorMap() {
 
     std::map<int, cv::Vec3b> colors;
 
@@ -46,7 +46,7 @@ std::map<int, cv::Vec3b> InitColorMap() {
 }
 
 /**
- * The function "InsertBoundingBox" takes a binary mask image and a file path as input, and writes the
+ * The function "insertBoundingBox" takes a binary mask image and a file path as input, and writes the
  * bounding box coordinates of each object in the mask to the specified file.
  * 
  * @param mask The "mask" parameter is a cv::Mat object representing a binary mask. It is used to
@@ -54,7 +54,7 @@ std::map<int, cv::Vec3b> InitColorMap() {
  * @param filePath The `filePath` parameter is a string that represents the path to the file where the
  * bounding box information will be written.
  */
-void InsertBoundingBox(const cv::Mat mask, std::string filePath) {
+void insertBoundingBox(const cv::Mat& mask, std::string filePath) {
 
     std::ofstream file(filePath, std::ios::trunc); // Open the file in append mode
 
@@ -106,7 +106,7 @@ std::vector<int> getLabelsFound(const cv::Mat& mask) {
  * 
  * @return a cv::Mat object, which is the segmentation mask.
  */
-cv::Mat Tray::segmentImage(const cv::Mat& src, std::vector<int>& labelsFound, const std::string& filePath) {
+void Tray::segmentImage(const cv::Mat& src, cv::Mat& dst, std::vector<int>& labelsFound, const std::string& filePath) {
 
     cv::Mat segmentationMask(src.size(), CV_8UC1, cv::Scalar(0));
 
@@ -136,7 +136,7 @@ cv::Mat Tray::segmentImage(const cv::Mat& src, std::vector<int>& labelsFound, co
     // Store labels found
     labelsFound = getLabelsFound(segmentationMask);
 
-    return segmentationMask;
+    dst = segmentationMask;
 }
 
 /**
@@ -233,11 +233,11 @@ Tray::Tray(const std::string& trayBefore, const std::string& trayAfter) {
     trayBeforeBoundingBoxesPath = extractTrayFromPath(trayBefore) + "/" + "bounding_boxes/" + extractName(trayBefore) + ".txt";
     trayAfterBoundingBoxesPath = extractTrayFromPath(trayAfter) + "/" + "bounding_boxes/" + extractName(trayAfter) + ".txt";
 
-    trayBeforeSegmentationMask = segmentImage(before, labelsFound, trayBeforeBoundingBoxesPath);
-    trayAfterSegmentationMask = segmentImage(after, labelsFound, trayAfterBoundingBoxesPath);
+    segmentImage(before, trayBeforeSegmentationMask, labelsFound, trayBeforeBoundingBoxesPath);
+    segmentImage(after, trayAfterSegmentationMask, labelsFound, trayAfterBoundingBoxesPath);
 
-    InsertBoundingBox(trayBeforeSegmentationMask, trayBeforeBoundingBoxesPath);
-    InsertBoundingBox(trayAfterSegmentationMask, trayAfterBoundingBoxesPath);
+    insertBoundingBox(trayBeforeSegmentationMask, trayBeforeBoundingBoxesPath);
+    insertBoundingBox(trayAfterSegmentationMask, trayAfterBoundingBoxesPath);
 
     saveSegmentedMask(trayBeforePath, trayBeforeSegmentationMask);
     saveSegmentedMask(trayAfterPath, trayAfterSegmentationMask);
@@ -252,9 +252,9 @@ Tray::Tray(const std::string& trayBefore, const std::string& trayAfter) {
  * 
  * @return a cv::Mat object, which represents the segmented image with colored regions.
  */
-cv::Mat getColoredSegmentationMask(const cv::Mat& mask) {
+void getColoredSegmentationMask(const cv::Mat& mask, cv::Mat& dst) {
     
-    std::map<int, cv::Vec3b> colors = InitColorMap();
+    std::map<int, cv::Vec3b> colors = initColorMap();
 
     // For each pixel of the mask, assign the correct color based on the label
     cv::Mat segmentedImage(mask.size(), CV_8UC3, cv::Scalar(0));
@@ -262,7 +262,7 @@ cv::Mat getColoredSegmentationMask(const cv::Mat& mask) {
         for (int c = 0; c < mask.cols; c++)
             if (mask.at<uchar>(r, c) != 0)
                 segmentedImage.at<cv::Vec3b>(r, c) = colors[int(mask.at<uchar>(r, c))];
-    return segmentedImage;
+    dst = segmentedImage;
 }
 
 /**
@@ -280,7 +280,7 @@ cv::Mat getColoredSegmentationMask(const cv::Mat& mask) {
 void overimposeDetection(const cv::Mat& src, std::string filePath, cv::Mat &dst) {
 
     cv::Mat out = src.clone();
-    std::map<int, cv::Vec3b> colors = InitColorMap();
+    std::map<int, cv::Vec3b> colors = initColorMap();
 
     std::ifstream file(filePath);
 
@@ -341,8 +341,9 @@ void Tray::showTray() {
 
     cv::Mat tmp1_1, tmp1_2, tmp1_3, tmp2_1, tmp2_2, tmp2_3;
 
-    cv::Mat colorBeforeSegmented = getColoredSegmentationMask(trayBeforeSegmentationMask);
-    cv::Mat colorAfterSegmented = getColoredSegmentationMask(trayAfterSegmentationMask);
+    cv::Mat colorBeforeSegmented, colorAfterSegmented;
+    getColoredSegmentationMask(trayBeforeSegmentationMask, colorBeforeSegmented);
+    getColoredSegmentationMask(trayAfterSegmentationMask, colorAfterSegmented);
 
     tmp1_1 = trayBeforeImage.clone();
 

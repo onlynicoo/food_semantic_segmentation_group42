@@ -33,10 +33,10 @@ class Tray {
         Tray(const std::string&, const std::string&);
         
         // Segment a given image, saving the food found and the the bounding boxes
-        cv::Mat segmentImage(const cv::Mat&, std::vector<int>&, const std::string&);
+        void segmentImage(const cv::Mat&, cv::Mat&, std::vector<int>&, const std::string&);
         
         // Get trayAfterPath
-        std::string get_trayAfterPath();
+        std::string getTrayAfterPath();
         
         // Show the trays before and after the meal, the detection bounding boxes and the segmentation masks
         void showTray();
