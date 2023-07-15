@@ -19,7 +19,11 @@ class FeatureComparator {
         };
 
         static const int NORMALIZE_VALUE = 100;
+        static const std::string LABEL_FEATURES_PATH;
+        static const std::string LABEL_FEATURES_NAME;
 
         static cv::Mat getImageFeatures(cv::Mat img, cv::Mat mask);
         static std::vector<LabelDistance> getLabelDistances(cv::Mat labelsFeatures, std::vector<int> labelWhitelist, cv::Mat imgFeatures);
+        static void writeLabelFeaturesToFile(cv::Mat features);
+        static cv::Mat readLabelFeaturesFromFile();
 };

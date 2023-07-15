@@ -63,8 +63,6 @@ int main(int argc, char **argv) {
         if (!imagesFeatures[i].empty()) {
             reduce(imagesFeatures[i], labelFeatures.row(i), 0, cv::REDUCE_AVG);
         }
-
-    cv::FileStorage fs("../features/label_features.yml", cv::FileStorage::WRITE);
-    fs << "labelFeatures" << labelFeatures;
-    fs.release();
+    
+    FeatureComparator::writeLabelFeaturesToFile(labelFeatures);
 }

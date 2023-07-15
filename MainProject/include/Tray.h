@@ -20,22 +20,12 @@ class Tray {
         
         cv::Mat traysBeforeSegmented;
         cv::Mat traysAfterSegmented;
-
-        std::string LABELS[14] = {
-        "0. Background", "1. pasta with pesto", "2. pasta with tomato sauce", "3. pasta with meat sauce",
-        "4. pasta with clams and mussels", "5. pilaw rice with peppers and peas", "6. grilled pork cutlet",
-        "7. fish cutlet", "8. rabbit", "9. seafood salad", "10. beans", "11. basil potatoes", "12. salad", "13. bread"};
-
-        std::string labelFeaturesPath = "../features/label_features.yml";
         
         void SaveSegmentedMask(std::string, cv::Mat);
 
         cv::Mat SegmentBread(cv::Mat);
 
-    public:
-        const int SMALL_WINDOW_SIZE = 50;
-        const int BIG_WINDOW_SIZE = 150;
-        
+    public:        
         //
         Tray(std::string, std::string);
         

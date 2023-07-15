@@ -1,8 +1,20 @@
 #include <opencv2/opencv.hpp>
-#include "../include/FindFood.h"
+#include "../include/FeatureComparator.h"
+#include "../include/Utils.h"
 #include "../include/SegmentFood.h"
 
-void SegmentFood::getFoodMask(cv::Mat src, cv::Mat &mask, cv::Point center, int radius) {
+const std::vector<int> SegmentFood::FIRST_PLATES_LABELS{1, 2, 3, 4, 5};
+const std::vector<int> SegmentFood::SECOND_PLATES_LABELS{6, 7, 8, 9};
+const std::vector<int> SegmentFood::SIDE_DISHES_LABELS{10, 11};
+const std::string SegmentFood::LABEL_NAMES[] = {
+            "0. Background", "1. pasta with pesto", "2. pasta with tomato sauce", "3. pasta with meat sauce",
+            "4. pasta with clams and mussels", "5. pilaw rice with peppers and peas", "6. grilled pork cutlet",
+            "7. fish cutlet", "8. rabbit", "9. seafood salad", "10. beans", "11. basil potatoes", "12. salad", "13. bread"};
+
+void SegmentFood::getFoodMaskFromPlate(cv::Mat src, cv::Mat &mask, cv::Vec3f plate) {
+
+    cv::Point center(plate[0], plate[1]);
+    int radius = plate[2];
 
     // Pre-process
     cv::Mat img;
@@ -22,11 +34,6 @@ void SegmentFood::getFoodMask(cv::Mat src, cv::Mat &mask, cv::Point center, int 
                     mask.at<int8_t>(cur) = 1;
             }
         }
-
-    // Open weak connected components
-    /*int openingSize = radius / 30;
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(openingSize, openingSize));
-    morphologyEx(mask, mask, cv::MORPH_OPEN, kernel);*/
     
     // Find contours in the mask
     std::vector<std::vector<cv::Point>> contours;
@@ -82,7 +89,334 @@ void SegmentFood::getFoodMask(cv::Mat src, cv::Mat &mask, cv::Point center, int 
     morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
 }
 
-void SegmentFood::getSaladMask(cv::Mat src, cv::Mat &mask, cv::Point center, int radius) {
+void SegmentFood::getFoodMaskFromPlates(
+    cv::Mat src, cv::Mat &mask, std::vector<cv::Vec3f> plates, std::vector<int> labelsFound)
+{
+
+    cv::Mat segmentationMask(src.size(), CV_8UC1, cv::Scalar(0));
+
+    cv::Mat labels = FeatureComparator::readLabelFeaturesFromFile();
+
+    std::vector<std::vector<FeatureComparator::LabelDistance>> platesLabelDistances;
+    std::vector<int> allowedLabels;
+    std::vector<cv::Mat> platesMasks;
+
+    allowedLabels = Utils::getVectorUnion(FIRST_PLATES_LABELS, Utils::getVectorUnion(SECOND_PLATES_LABELS, SIDE_DISHES_LABELS));
+    if (!labelsFound.empty())
+        allowedLabels = Utils::getVectorIntersection(allowedLabels, labelsFound);
+
+    for(int i = 0; i < plates.size(); i++) {
+
+        cv::Mat tmpMask;
+        
+        SegmentFood::getFoodMaskFromPlate(src, tmpMask, plates[i]);
+
+        // Do not consider empty plate masks
+        if (cv::countNonZero(tmpMask) == 0) {
+            plates.erase(plates.begin() + i);
+            i--;
+            continue;
+        }
+
+        platesMasks.push_back(tmpMask);
+        
+        // Creates the features for the segmented patch
+        cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, tmpMask);
+        platesLabelDistances.push_back(FeatureComparator::getLabelDistances(labels, allowedLabels, patchFeatures));
+    }
+
+    /*
+    // Print label distances
+    for (int j = 0; j < platesLabelDistances.size(); j++) {
+        for (int k = 0; k < platesLabelDistances[j].size(); k++)
+            std::cout << platesLabelDistances[j][k].label << " " << platesLabelDistances[j][k].distance << " - ";
+        std::cout << std::endl;
+    }
+    */    
+
+    // Choose best labels such that if there are more plates, they are one first and one second plate
+    if (platesLabelDistances.size() > 1) {
+
+        int plate0FirstIdx = -1, plate0SecondIdx = -1, plate1FirstIdx = -1, plate1SecondIdx = -1;
+
+        // Find best first and second plate option for plate 0
+        for (int j = 0; j < platesLabelDistances[0].size(); j++) {
+            if (Utils::getIndexInVector(FIRST_PLATES_LABELS, platesLabelDistances[0][j].label) != -1) {
+                if (plate0FirstIdx == -1)
+                    plate0FirstIdx = j;
+            } else {
+                if (plate0SecondIdx == -1)
+                    plate0SecondIdx = j;
+            }
+            if (plate0FirstIdx != -1 && plate0SecondIdx != -1)
+                break;
+        }
+
+        // Find best first and second plate option for plate 1
+        for (int j = 0; j < platesLabelDistances[1].size(); j++) {
+            if (Utils::getIndexInVector(FIRST_PLATES_LABELS, platesLabelDistances[1][j].label) != -1) {
+                if (plate1FirstIdx == -1)
+                    plate1FirstIdx = j;
+            } else {
+                if (plate1SecondIdx == -1)
+                    plate1SecondIdx = j;
+            }
+            if (plate1FirstIdx != -1 && plate1SecondIdx != -1)
+                break;
+        }
+
+        // Compute the loss between choosing the best first or second dish normalized using the worst label distance
+        double plate0NormalizedLoss = std::abs(platesLabelDistances[0][plate0FirstIdx].distance - platesLabelDistances[0][plate0SecondIdx].distance)
+                                        / platesLabelDistances[0][platesLabelDistances[0].size() - 1].distance;
+        double plate1NormalizedLoss = std::abs(platesLabelDistances[1][plate1FirstIdx].distance - platesLabelDistances[1][plate1SecondIdx].distance)
+                                        / platesLabelDistances[1][platesLabelDistances[1].size() - 1].distance;
+        
+        if (plate0NormalizedLoss < plate1NormalizedLoss) {
+            
+            // If plate 0 has less loss, give preference to plate 1
+            if (plate1FirstIdx < plate1SecondIdx) {
+                platesLabelDistances[0][0] = platesLabelDistances[0][plate0SecondIdx];
+                platesLabelDistances[1][0] = platesLabelDistances[1][plate1FirstIdx];
+            } else {
+                platesLabelDistances[0][0] = platesLabelDistances[0][plate0FirstIdx];
+                platesLabelDistances[1][0] = platesLabelDistances[1][plate1SecondIdx];
+            }
+        } else {
+
+            // Otherwise, give preference to plate 1
+            if (plate0FirstIdx < plate0SecondIdx) {
+                platesLabelDistances[0][0] = platesLabelDistances[0][plate0FirstIdx];
+                platesLabelDistances[1][0] = platesLabelDistances[1][plate1SecondIdx];
+            } else {
+                platesLabelDistances[0][0] = platesLabelDistances[0][plate0SecondIdx];
+                platesLabelDistances[1][0] = platesLabelDistances[1][plate1FirstIdx];
+            }
+        }
+    }
+
+    for (int i = 0; i < plates.size(); i++) {
+        std::cout << "Plate " << i << std::endl;
+
+        int foodLabel = platesLabelDistances[i][0].label;
+        double labelDistance = platesLabelDistances[i][0].distance;
+        
+        // If it is a first plate, we have finished
+        if (Utils::getIndexInVector(FIRST_PLATES_LABELS, foodLabel) != -1) {
+
+            // Refine segmentation
+            SegmentFood::refineMask(src, platesMasks[i], foodLabel);
+
+            // Add to segmentation mask
+            for(int r = 0; r < segmentationMask.rows; r++)
+                for(int c = 0; c < segmentationMask.cols; c++)
+                    if(platesMasks[i].at<uchar>(r,c) != 0)
+                        segmentationMask.at<uchar>(r,c) = int(platesMasks[i].at<uchar>(r,c)*foodLabel);
+
+            std::cout << "Label found: " << LABEL_NAMES[foodLabel] << std::endl;
+        } else {
+
+            // We have to split the mask into more foods
+            allowedLabels = Utils::getVectorUnion(SECOND_PLATES_LABELS, SIDE_DISHES_LABELS);  
+            if (!labelsFound.empty())
+                allowedLabels = Utils::getVectorIntersection(labelsFound, allowedLabels);
+
+            // Crop mask to non zero area
+            cv::Mat tmpMask = platesMasks[i];
+            cv::Rect bbox = cv::boundingRect(tmpMask);
+            cv::Mat croppedMask = tmpMask(bbox).clone();
+
+            // Split mask into a grid of smaller masks
+            int BIG_WINDOW_SIZE = SegmentFood::BIG_WINDOW_SIZE;
+            int windowSize = std::min(BIG_WINDOW_SIZE, std::min(croppedMask.rows, croppedMask.cols));
+            std::vector<int> gridLabels;
+
+            for (int y = 0; y < croppedMask.rows; y += windowSize) {
+                for (int x = 0; x < croppedMask.cols; x += windowSize) {
+                    
+                    // Compute submask
+                    cv::Rect windowRect(x, y, std::min(windowSize, croppedMask.cols - x), std::min(windowSize, croppedMask.rows - y));
+                    cv::Mat submask = croppedMask(windowRect).clone();
+
+                    if (cv::countNonZero(submask) == 0)
+                        continue;
+
+                    cv::Mat curMask = cv::Mat::zeros(tmpMask.size(), tmpMask.type());
+                    submask.copyTo(curMask(bbox)(windowRect)); 
+
+                    /*
+                    // Print each masked window
+                    cv::Mat masked;
+                    cv::bitwise_and(src, src, masked, curMask);
+                    cv::imshow("masked", masked);
+                    cv::waitKey();
+                    */
+
+                    // Find a label for each submask                  
+                    cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, curMask);
+                    foodLabel = FeatureComparator::getLabelDistances(labels, allowedLabels, patchFeatures)[0].label;
+                    gridLabels.push_back(foodLabel);
+                }
+            }
+
+            // Repeat using only the most frequent labels of the previous step
+            std::vector<int> sortedGridLabels = Utils::sortVectorByFreq(gridLabels);
+            std::vector<int> foundSecondPlates = Utils::getVectorIntersection(sortedGridLabels, SECOND_PLATES_LABELS);
+            std::vector<int> foundSideDishes = Utils::getVectorIntersection(sortedGridLabels, SIDE_DISHES_LABELS);
+
+            std::vector<int> keptLabels;
+            if (!foundSecondPlates.empty())
+                keptLabels.push_back(foundSecondPlates[0]);
+            if (!foundSideDishes.empty())
+                keptLabels.push_back(foundSideDishes[0]);
+            if (foundSideDishes.size() > 1)
+                keptLabels.push_back(foundSideDishes[1]);
+
+            /*
+            // Print kept labels
+            std::cout << "Kept labels: ";
+            for (int j = 0; j < keptLabels.size(); j++)
+                std::cout << keptLabels[j] << " ";
+            std::cout << std::endl;
+            */
+
+            // Use smaller submasks for a better segmentation results
+            int SMALL_WINDOW_SIZE = SegmentFood::SMALL_WINDOW_SIZE;
+            windowSize = std::min(SMALL_WINDOW_SIZE, std::min(croppedMask.rows, croppedMask.cols));
+
+            // Create a matrix of the assigned labels
+            int rows = std::ceil(float(croppedMask.rows) / float(windowSize));
+            int cols = std::ceil(float(croppedMask.cols) / float(windowSize));
+            std::vector<std::vector<int>> labelMat(rows, std::vector<int> (cols)); 
+
+            for (int y = 0; y < croppedMask.rows; y += windowSize) {
+                
+                int row = std::floor(float(y) / float(windowSize));
+                for (int x = 0; x < croppedMask.cols; x += windowSize) {
+                    
+                    int col = std::floor(float(x) / float(windowSize));
+
+                    // Compute submask
+                    cv::Rect windowRect(x, y, std::min(windowSize, croppedMask.cols - x), std::min(windowSize, croppedMask.rows - y));
+                    cv::Mat submask = croppedMask(windowRect).clone();
+
+                    if (cv::countNonZero(submask) == 0) {
+                        labelMat[row][col] = -1;
+                        continue;
+                    }
+
+                    cv::Mat curMask = cv::Mat::zeros(tmpMask.size(), tmpMask.type());
+                    submask.copyTo(curMask(bbox)(windowRect));
+
+                    // Find a label for each submask
+                    cv::Mat patchFeatures = FeatureComparator::getImageFeatures(src, curMask);
+                    foodLabel = FeatureComparator::getLabelDistances(labels, keptLabels, patchFeatures)[0].label;
+                    labelMat[row][col] = foodLabel;
+                }
+            }
+
+            // Re-assign labels based also on the neighboring submasks
+            labelMat = Utils::getMostFrequentMatrix(labelMat, 1);
+
+            // Merge together submasks with the same label
+            std::vector<cv::Mat> foodMasks(keptLabels.size());
+
+            for (int y = 0; y < croppedMask.rows; y += windowSize) {
+
+                int row = std::floor(float(y) / float(windowSize));
+                for (int x = 0; x < croppedMask.cols; x += windowSize) {
+
+                    int col = std::floor(float(x) / float(windowSize));
+
+                    // Compute submask
+                    cv::Rect windowRect(x, y, std::min(windowSize, croppedMask.cols - x), std::min(windowSize, croppedMask.rows - y));
+                    cv::Mat submask = croppedMask(windowRect).clone();
+
+                    if (cv::countNonZero(submask) == 0)
+                        continue;
+
+                    cv::Mat curMask = cv::Mat::zeros(tmpMask.size(), tmpMask.type());
+                    submask.copyTo(curMask(bbox)(windowRect));
+
+                    // Get label
+                    foodLabel = labelMat[row][col];
+                    int index = Utils::getIndexInVector(keptLabels, foodLabel);
+
+                    // Add to the mask of the corresponding label
+                    if (foodMasks[index].empty())
+                        foodMasks[index] = cv::Mat::zeros(tmpMask.size(), tmpMask.type());
+                    foodMasks[index] += curMask;                  
+                }
+            }
+
+            // Refine segmentation re-assigning small pieces of food
+            if (keptLabels.size() == 2) {
+                for (int j = 0; j < keptLabels.size(); j++) {
+
+                    if (cv::countNonZero(foodMasks[j]) == 0)
+                        continue;
+
+                    // Find contours in the mask
+                    std::vector<std::vector<cv::Point>> contours, keptContours;
+                    cv::findContours(foodMasks[j], contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+                    // Sort contours based on area
+                    std::sort(contours.begin(), contours.end(), [](const std::vector<cv::Point>& contour1, const std::vector<cv::Point>& contour2) {
+                        return cv::contourArea(contour1) > cv::contourArea(contour2);
+                    });
+
+                    // Keep biggest contour if it is not too small
+                    if (contours.size() > 0 && cv::contourArea(contours[0]) > 500) {
+                        keptContours.push_back(contours.front());
+                        contours.erase(contours.begin());
+
+                        // Keep second biggest contour if it is slightly smaller
+                        if (contours.size() > 0 && cv::contourArea(contours[0]) > cv::contourArea(keptContours[0]) * 0.90) {
+                            keptContours.push_back(contours.front());
+                            contours.erase(contours.begin());
+                        }
+                    }
+
+                    // Draw kept countours
+                    foodMasks[j] = cv::Mat::zeros(foodMasks[j].size(), CV_8UC1);
+                    cv::drawContours(foodMasks[j], keptContours, -1, cv::Scalar(1), cv::FILLED);
+                    
+                    // Draw other countours on the other mask
+                    if (j == 0)
+                        cv::drawContours(foodMasks[1], contours, -1, cv::Scalar(1), cv::FILLED);
+                    else
+                        cv::drawContours(foodMasks[0], contours, -1, cv::Scalar(1), cv::FILLED);
+                    
+                }
+            }
+
+            // Add found masks to the segmentation mask
+            for (int j = 0; j < keptLabels.size(); j++) {
+
+                if (cv::countNonZero(foodMasks[j]) == 0)
+                        continue;
+
+                foodLabel = keptLabels[j];
+
+                // Refine segmentation
+                SegmentFood::refineMask(src, platesMasks[i], foodLabel);
+
+                for(int r = 0; r < segmentationMask.rows; r++)
+                        for(int c = 0; c < segmentationMask.cols; c++)
+                            if(foodMasks[j].at<uchar>(r,c) != 0)
+                                segmentationMask.at<uchar>(r,c) = int(foodMasks[j].at<uchar>(r,c) * foodLabel);
+                
+                std::cout << "Label found: " << LABEL_NAMES[foodLabel] << std::endl;
+            }
+        }
+    }
+
+    mask = segmentationMask;
+}
+
+void SegmentFood::getSaladMaskFromBowl(cv::Mat src, cv::Mat &mask, cv::Vec3f bowl) {
+
+    cv::Point center(bowl[0], bowl[1]);
+    int radius = bowl[2];
 
     // Pre-process
     cv::Mat img;
@@ -99,7 +433,7 @@ void SegmentFood::getSaladMask(cv::Mat src, cv::Mat &mask, cv::Point center, int
                 // Check if current point is not part of the bowl
                 int hsv[3] = {int(img.at<cv::Vec3b>(cur)[0]), int(img.at<cv::Vec3b>(cur)[1]), int(img.at<cv::Vec3b>(cur)[2])};
                 if (hsv[1] > 175 || hsv[2] > 245)
-                    mask.at<int8_t>(cur) = 1;
+                    mask.at<int8_t>(cur) = SALAD_LABEL;
             }
         }
 
@@ -123,12 +457,10 @@ void SegmentFood::getSaladMask(cv::Mat src, cv::Mat &mask, cv::Point center, int
     }
 
     mask = cv::Mat::zeros(mask.size(), CV_8UC1);
-    cv::drawContours(mask, contours, -1, cv::Scalar(1), cv::FILLED);
+    cv::drawContours(mask, contours, -1, cv::Scalar(SALAD_LABEL), cv::FILLED);
 }
 
-cv::Mat SegmentFood::SegmentBread(cv::Mat src) {
-    
-    cv::Mat breadMask = FindFood::findBread(src);
+cv::Mat SegmentFood::getBreadMask(cv::Mat src, cv::Mat breadMask) {
 
     int kernelSizeErosion = 5; // Adjust the size according to your needs
     cv::Mat kernelErosion = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(kernelSizeErosion, kernelSizeErosion));
@@ -177,7 +509,7 @@ cv::Mat SegmentFood::SegmentBread(cv::Mat src) {
         }    
     }
     if (index != -1) 
-        cv::fillPoly(out, contours[index], cv::Scalar(13));
+        cv::fillPoly(out, contours[index], cv::Scalar(BREAD_LABEL));
 
     return out;
 }   

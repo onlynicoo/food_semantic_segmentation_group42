@@ -49,6 +49,8 @@ std::vector<cv::Vec3f> FindFood::findPlates(cv::Mat src) {
         }
     }
 
+    actual_plates.resize(std::min(2, (int) actual_plates.size()));            // Assume there are at most 2 plates
+
     return actual_plates;
 
 }

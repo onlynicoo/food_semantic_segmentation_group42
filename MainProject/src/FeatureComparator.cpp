@@ -1,6 +1,9 @@
 #include <opencv2/opencv.hpp>
 #include "../include/FeatureComparator.h"
 
+const std::string FeatureComparator::LABEL_FEATURES_PATH = "../features/label_features.yml";
+const std::string FeatureComparator::LABEL_FEATURES_NAME = "labelFeatures";
+
 std::vector<FeatureComparator::LabelDistance> FeatureComparator::getLabelDistances(
     cv::Mat labelsFeatures, std::vector<int> labelWhitelist, cv::Mat imgFeatures)
 {
@@ -125,5 +128,25 @@ cv::Mat FeatureComparator::getImageFeatures(cv::Mat img, cv::Mat mask) {
     cv::Mat features;
     appendColumns(0.6 * getHueFeatures(img, mask, 64), features);
     appendColumns(0.4 * getCannyLBPFeatures(img, mask, 64), features);
+    return features;
+}
+
+void FeatureComparator::writeLabelFeaturesToFile(cv::Mat features) {
+    cv::FileStorage fs(LABEL_FEATURES_PATH, cv::FileStorage::WRITE);
+    fs << LABEL_FEATURES_NAME << features;
+    fs.release();
+}
+
+cv::Mat FeatureComparator::readLabelFeaturesFromFile() {
+    cv::Mat features;
+
+    // Read template images
+    cv::FileStorage fs(LABEL_FEATURES_PATH, cv::FileStorage::READ);
+    if (!fs.isOpened())
+        std::cout << "Failed to open label features file." << std::endl;
+
+    fs[LABEL_FEATURES_NAME] >> features;
+    fs.release();
+
     return features;
 }
