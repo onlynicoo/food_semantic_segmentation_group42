@@ -23,6 +23,9 @@ int main( int argc, char** argv ) {
         std::string before = argv[1];
         std::string after = argv[2];
         Tray my_tray = Tray(before, after);
+        my_tray.PrintInfo();
+        //my_tray.RefineSegmentation();
+        
     }
     return 0;
 }

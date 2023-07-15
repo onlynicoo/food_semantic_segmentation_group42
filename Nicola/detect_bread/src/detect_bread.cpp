@@ -9,38 +9,8 @@ const char* window_plates = "src";
 std::vector<Mat> images, images_gray;
 int imgPerRow = 4;
 
-int ratio = 1;
-int kernel_size = 7;
-int lowThreshold = 1000;
-const int max_lowThreshold = 1500;
-int ratioMinDist = 2;
-int param1 = 150;
-int param2 = 20;
-int min_radius_hough_plates = 193;
 
-int max_radius_hough_plates = 202;
-
-/*
-int thresholdValueToChange = 111;
-
-int thresholdSaturation = 20;
-
-int thresholdValueCanny = 90;
-
-//int thresholdLow = 83;
-int thresholdLow = 70;
-int thresholdHigh = 116;
-*/
-
-int thresholdHigh = 117;
-int thresholdLow = 70;
-int thresholdValueToChange = 111;
-int thresholdValueCanny = 102;
-
-int thresholdSaturation = 160;
-
-
-cv::Mat SegmentBread(cv::Mat src) {
+cv::Mat FindBread(cv::Mat src) {
 
     // used as base img
     cv::Mat maskedImage = src.clone();
@@ -85,14 +55,12 @@ cv::Mat SegmentBread(cv::Mat src) {
     cv::Mat resultyuv;
     cv::bitwise_and(yuvChannels[1], yuvChannels[1], resultyuv, mask);
 
-
     // Define the structuring element for morphological operation
     cv::Mat kernelclosure = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(11, 11));
 
     // Perform morphological closure
     cv::Mat resultclosure;
     cv::morphologyEx(resultyuv, resultclosure, cv::MORPH_CLOSE, kernelclosure);
-    
 
     // Perform connected component analysis
     cv::Mat labels, stats, centroids;
@@ -166,9 +134,6 @@ cv::Mat SegmentBread(cv::Mat src) {
     cv::morphologyEx(thresholdedCanny, closedImage, cv::MORPH_DILATE, kernelDilation, cv::Point(1, 1), 10);
     cv::morphologyEx(closedImage, closedImage, cv::MORPH_CLOSE, kernelClosing, cv::Point(1, 1), 4);
 
-    
-
-
     cv::morphologyEx(closedImage, closedImage, cv::MORPH_ERODE, kernelErosion, cv::Point(1, 1), 6);
 
     cv::morphologyEx(closedImage, closedImage, cv::MORPH_DILATE, kernelDilation, cv::Point(1, 1), 20);
@@ -207,14 +172,12 @@ cv::Mat SegmentBread(cv::Mat src) {
     cv::morphologyEx(newMask, newMask, cv::MORPH_ERODE, kernelErosion, cv::Point(1, 1), 1);
     cv::morphologyEx(newMask, newMask, cv::MORPH_DILATE, kernelErosion, cv::Point(1, 1), 12);
         
-
-
     // Find contours in the binary mask
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(newMask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
     // Create a new image to hold the filled shapes
-    cv::Mat filledMask = cv::Mat::zeros(newMask.size(), CV_8UC1);
+    cv::Mat out = cv::Mat::zeros(newMask.size(), CV_8UC1);
 
     double thresholdArea = 20000;
     double largestAreaPost = 0;
@@ -228,21 +191,88 @@ cv::Mat SegmentBread(cv::Mat src) {
                 index = i;
             }    
     }
-    std::cout<< "largest area post " << largestAreaPost << "\n";
     if (index != -1) 
-        cv::fillPoly(filledMask, contours[index], cv::Scalar(13));
+        cv::fillPoly(out, contours[index], cv::Scalar(13));
 
-
-
-    cv::Mat out = filledMask;
-    
-
-    
     return out;
 }
 
+std::vector<cv::Rect> findBoundingRectangles(const cv::Mat& mask) {
+    // Find contours in the mask
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
+    // Find bounding rectangles for each contour
+    std::vector<cv::Rect> boundingRectangles;
+    for (const auto& contour : contours) {
+        cv::Rect boundingRect = cv::boundingRect(contour);
+        boundingRectangles.push_back(boundingRect);
+    }
 
+    return boundingRectangles;
+}
+
+cv::Mat SegmentBread(cv::Mat src, cv::Mat breadMask) {
+    cv::Mat image1 = src.clone();
+    cv::Mat image = src.clone();
+    
+    int kernelSizeErosion = 5; // Adjust the size according to your needs
+    cv::Mat kernelErosion = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(kernelSizeErosion, kernelSizeErosion));
+    cv::Mat erodedMask;
+    cv::morphologyEx(breadMask, erodedMask, cv::MORPH_ERODE, kernelErosion, cv::Point(1, 1), 3);
+
+    cv::Rect bbx = cv::boundingRect(erodedMask);
+	
+    Mat final_image, result_mask, bgModel, fgModel;
+
+    // GrabCut segmentation algorithm for current box
+    grabCut(image,		// input image
+        result_mask,	// segmentation resulting mask
+        bbx,			// rectangle containing foreground
+        bgModel, fgModel,	// models
+        10,				// number of iterations
+        cv::GC_INIT_WITH_RECT);
+    
+    cv::Mat tmpMask0 = (result_mask == 0);
+    cv::Mat tmpMask1 = (result_mask == 1);
+    cv::Mat tmpMask2 = (result_mask == 2);
+    cv::Mat tmpMask3 = (result_mask == 3);
+
+    cv::Mat foreground = (tmpMask3 | tmpMask1);
+
+    // Perform connected component analysis
+    cv::Mat labels, stats, centroids;
+    int numComponents = cv::connectedComponentsWithStats(foreground, labels, stats, centroids);
+
+    // Find contours in the binary mask
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(foreground, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    // Create a new image to hold the filled shapes
+    cv::Mat filledMask = cv::Mat::zeros(foreground.size(), CV_8UC1);
+
+    double largestAreaPost = 0;
+    int index = -1;
+    // Fill the contours of the shapes in the filled mask
+    for (int i = 0; i < contours.size(); i ++) {
+        double area = cv::contourArea(contours[i]);
+        if (area > largestAreaPost) {
+            largestAreaPost = area;
+            index = i;
+        }    
+    }
+    if (index != -1) 
+        cv::fillPoly(filledMask, contours[index], cv::Scalar(13));
+
+    cv::Mat out;
+    cv::bitwise_and(src, src, out, filledMask);
+    cv::imshow("breadMask", breadMask);
+    cv::imshow("out", out);
+    cv::waitKey();
+    std::cout << "src.size() = " << out.size() << "\n\n\n";
+
+    return filledMask;
+}   
 
 
 
@@ -260,7 +290,7 @@ void callBackFunc(int, void*) {
         Mat src = images[i].clone();
 
 
-        cv::Mat tmpMask = SegmentBread(src);
+        cv::Mat tmpMask = SegmentBread(src, FindBread(src));
         cv::Mat tmpImg;
         cv::bitwise_and(src, src, tmpImg, tmpMask);
 
@@ -286,22 +316,7 @@ void callBackFunc(int, void*) {
     }
     cv::imshow(window_plates, imageGrid);   
     cv::waitKey();
-
-
 }
-
-
-// Prints the parameters value
-void CallBackFunc(int event, int x, int y, int flags, void* userdata) {
-  if  ( event == EVENT_RBUTTONDOWN ) {
-    std::cout << "thresholdHigh = " << thresholdHigh << std::endl;
-    std::cout << "thresholdLow = " << thresholdLow << std::endl;
-    std::cout << "thresholdValueToChange = " << thresholdValueToChange << std::endl;
-    std::cout << "thresholdValueCanny = " << thresholdValueCanny << std::endl;
-  }
-}
- 
-
 
 
 int main( int argc, char** argv )
@@ -332,14 +347,8 @@ int main( int argc, char** argv )
 
 
 
-    createTrackbar( "saturaration:", window_plates, &thresholdSaturation, 255, callBackFunc);
-    createTrackbar( "canny:", window_plates, &thresholdValueCanny, 255, callBackFunc);
-    createTrackbar( "thresholdLow:", window_plates, &thresholdLow, 255, callBackFunc);
-    createTrackbar( "thresholdHigh  :", window_plates, &thresholdHigh, 255, callBackFunc);
-    createTrackbar( "thresholdValueToChange  :", window_plates, &thresholdValueToChange, 255, callBackFunc);
+    createTrackbar( "saturaration:", window_plates, &imgPerRow, 255, callBackFunc);
     setTrackbarMin( "Ratio:", window_plates, 1);
-
-    setMouseCallback(window_plates, CallBackFunc, (void*)NULL);
     
     imshow(window_plates, images[1]);
     cv::waitKey();  

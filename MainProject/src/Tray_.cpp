@@ -294,7 +294,7 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
             platesLabels.push_back(foodLabel);
 
             // Refine segmentation 
-            RefineSegmentation(src, platesMasks[i], foodLabel);
+            //RefineSegmentation(src, platesMasks[i], foodLabel);
             // Add to segmentation mask
             for(int r = 0; r < segmentationMask.rows; r++)
                 for(int c = 0; c < segmentationMask.cols; c++)
@@ -501,7 +501,8 @@ cv::Mat Tray::SegmentImage(const cv::Mat src, std::vector<int>& labelsFound, std
         for(int c = 0; c < breadMask.cols; c++)
             if(segmentationMask.at<uchar>(r,c) == 0)
                 segmentationMask.at<uchar>(r,c) = breadMask.at<uchar>(r,c);
-
+    
+   
     // Segment salad
     std::vector<cv::Vec3f> saladBowls = PlatesFinder::get_salad(src, (getIndexInVector(labelsFound, saladLabel) != -1));
     if (saladBowls.size() != 0) {
@@ -658,6 +659,8 @@ cv::Mat OverimposeDetection(cv::Mat src, std::string filePath) {
     }
     return out;
 }
+
+
 cv::Mat FindBread(cv::Mat src) {
 
     // used as base img
@@ -866,15 +869,13 @@ std::vector<cv::Rect> findBoundingRectangles(const cv::Mat& mask) {
 cv::Mat Tray::SegmentBread(cv::Mat src) {
     
     cv::Mat breadMask = FindBread(src);
-
     int kernelSizeErosion = 5; // Adjust the size according to your needs
     cv::Mat kernelErosion = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(kernelSizeErosion, kernelSizeErosion));
     cv::Mat erodedMask;
     cv::morphologyEx(breadMask, erodedMask, cv::MORPH_ERODE, kernelErosion, cv::Point(1, 1), 3);
 
     cv::Rect bbx = cv::boundingRect(erodedMask);
-    if (bbx.empty())
-        return cv::Mat(src.rows, src.cols, CV_8UC1, cv::Scalar(0));
+	
     cv::Mat final_image, result_mask, bgModel, fgModel;
 
     // GrabCut segmentation algorithm for current box
@@ -918,6 +919,7 @@ cv::Mat Tray::SegmentBread(cv::Mat src) {
 
     return out;
 }   
+
 
 void Tray::PrintInfo() {
 

@@ -51,6 +51,7 @@ class Tray {
         void PrintSaladPlate();
         
         void PrintInfo();
-        void RefineSegmentation();
+        void RefineSegmentation(const cv::Mat&, cv::Mat&, int);
+        //void RefineSegmentation();
 
 };
