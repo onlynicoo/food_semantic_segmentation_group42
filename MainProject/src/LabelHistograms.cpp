@@ -1,7 +1,7 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
-#include "../include/FeatureComparator.h"
+#include "../include/HistogramComparator.h"
 
 const int N_LABELS = 14;
 const int N_TRAYS = 8;
@@ -14,8 +14,8 @@ int main(int argc, char** argv) {
 
     std::cout << "Processing images in " + inputDir << std::endl;
 
-    int numProcessed = 0, numFeatures = -1;
-    std::vector<cv::Mat> imagesFeatures(N_LABELS);
+    int numProcessed = 0, numHistograms = -1;
+    std::vector<cv::Mat> imagesHistograms(N_LABELS);
     for (int i = 0; i < N_TRAYS; i++)
         for (int j = 0; j < trayNames.size(); j++) {
             // Read image and mask
@@ -35,33 +35,33 @@ int main(int argc, char** argv) {
                 if (cv::countNonZero(labelMask) == 0)
                     continue;
 
-                // If not empty, compute features for the patch
-                cv::Mat features;
-                FeatureComparator::getImageFeatures(img, labelMask, features);
+                // If not empty, compute histograms for the patch
+                cv::Mat histograms;
+                HistogramComparator::getImageHistograms(img, labelMask, histograms);
 
-                if (numFeatures == -1)
-                    numFeatures = features.cols;
+                if (numHistograms == -1)
+                    numHistograms = histograms.cols;
 
-                // Add features
-                cv::Mat* curFeatures = &imagesFeatures[label];
-                if (curFeatures->empty())
-                    features.copyTo(*curFeatures);
+                // Add histograms
+                cv::Mat* curHistograms = &imagesHistograms[label];
+                if (curHistograms->empty())
+                    histograms.copyTo(*curHistograms);
                 else
-                    curFeatures->push_back(features);
+                    curHistograms->push_back(histograms);
 
                 numProcessed++;
             }
         }
 
     std::cout << "Total processed patches: " << numProcessed << std::endl;
-    std::cout << "Number of features: " << numFeatures << std::endl;
+    std::cout << "Number of histograms: " << numHistograms << std::endl;
 
-    // Compute average features for every label
-    cv::Mat labelFeatures = cv::Mat(N_LABELS, numFeatures, CV_32F, cv::Scalar(0));
-    for (int i = 0; i < labelFeatures.rows; i++)
-        if (!imagesFeatures[i].empty()) {
-            reduce(imagesFeatures[i], labelFeatures.row(i), 0, cv::REDUCE_AVG);
+    // Compute average histograms for every label
+    cv::Mat labelHistograms = cv::Mat(N_LABELS, numHistograms, CV_32F, cv::Scalar(0));
+    for (int i = 0; i < labelHistograms.rows; i++)
+        if (!imagesHistograms[i].empty()) {
+            reduce(imagesHistograms[i], labelHistograms.row(i), 0, cv::REDUCE_AVG);
         }
 
-    FeatureComparator::writeLabelFeaturesToFile(labelFeatures);
+    HistogramComparator::writeLabelHistogramsToFile(labelHistograms);
 }

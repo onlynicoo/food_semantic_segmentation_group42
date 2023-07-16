@@ -9,8 +9,8 @@ find_package(OpenCV REQUIRED)
 include_directories($(OpenCV_INCLUDE_DIRS))
 
 # Executables
-add_executable(LabelFeatures
-    src/LabelFeatures.cpp
+add_executable(LabelHistograms
+    src/LabelHistograms.cpp
 )
 
 add_executable(main
@@ -22,9 +22,9 @@ add_executable(mainTest
 )
 
 # Libraries
-add_library(FeatureComparator
-    include/FeatureComparator.h
-    src/FeatureComparator.cpp
+add_library(HistogramComparator
+    include/HistogramComparator.h
+    src/HistogramComparator.cpp
 )
 
 add_library(FoodFinder
@@ -58,21 +58,25 @@ add_library(Utils
 )
 
 # Link libraries
-target_link_libraries(FeatureComparator ${OpenCV_LIBS})
+target_link_libraries(HistogramComparator ${OpenCV_LIBS})
 target_link_libraries(FoodFinder ${OpenCV_LIBS})
 target_link_libraries(MetricsCalculation ${OpenCV_LIBS})
 target_link_libraries(FoodSegmenter ${OpenCV_LIBS})
 target_link_libraries(Test ${OpenCV_LIBS})
 
-target_link_libraries(LabelFeatures FeatureComparator)
+target_link_libraries(LabelHistograms HistogramComparator)
 target_link_libraries(main Tray)
 target_link_libraries(mainTest Tray Test)
-target_link_libraries(FoodSegmenter FeatureComparator Utils)
+target_link_libraries(FoodSegmenter HistogramComparator Utils)
 target_link_libraries(Test Tray MetricsCalculation)
 target_link_libraries(Tray FoodFinder FoodSegmenter Utils)
 
+# Create data folder
+file(MAKE_DIRECTORY data)
+
 # Create main output folder
 file(MAKE_DIRECTORY output)
+
 # Create the folder for files
 file(MAKE_DIRECTORY output/tray1)
 file(MAKE_DIRECTORY output/tray1/masks)
