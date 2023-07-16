@@ -118,6 +118,7 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 
 	std::vector<Prediction>& predictions,
 	std::set<int>& predictedClasses,
+	std::vector<std::pair<int,int>>& gTfoodItem_numbers,
 	int& gtf,
 
 	const cv::Mat& gT_leftover_masks,
@@ -126,4 +127,4 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 	const std::string ourBBs_leftover
 );
 
-double calculateAP(const std::vector<Prediction>&, int);
+double calculateAP(const std::vector<Prediction>&, int,int);

@@ -148,7 +148,7 @@ double singlePlateLeftoverEstimationMetric(const cv::Mat& beforeMask, const cv::
 					https: //towardsdatascience.com/a-better-map-for-object-detection-32662767d424
 					https:// jonathan-hui.medium.com/map-mean-average-precision-for-object-detection-45c121a31173
 */
-double calculateAP(const std::vector<Prediction>& predictions, int classID)
+double calculateAP(const std::vector<Prediction>& predictions, int classID, int gtNumItemClass_pc)
 {
 	double ap = 0.0;
 	int cumulativeTP = 0;
@@ -168,6 +168,9 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID)
 		return a.getConfidence() > b.getConfidence();
 		});
 
+
+
+
 	// Calcola i valori di precisione e recall per ogni predizione
 	std::vector<double> precision;
 	std::vector<double> recall;
@@ -182,14 +185,13 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID)
 			}
 
 			double currPrecision = static_cast<double>(cumulativeTP) / (cumulativeTP + cumulativeFP);
-			double currRecall = static_cast<double>(cumulativeTP) / predictions.size();
+			double currRecall = static_cast<double>(cumulativeTP) / gtNumItemClass_pc;
 
 			p_r_points.push_back(cv::Point2d(currRecall, currPrecision));
 			//precision.push_back(currPrecision);
 			//recall.push_back(currRecall);
 
 		}
-
 	}
 
 	// Calcola l'Average Precision (AP) utilizzando l'interpolazione a 11 punti di recall
@@ -202,11 +204,20 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID)
 		});
 
 	for (int i = 0; i < p_r_points.size(); i++)
-		if (abs(p_r_points.at(i).x - floor(p_r_points.at(i).x)) > 0.5)
-			p_r_points.at(i).x = floor(p_r_points.at(i).x) + 1;
-		else
-			p_r_points.at(i).x = floor(p_r_points.at(i).x);
-	
+	{
+		int nearestIndex = -1;
+		double minDiffSoFar = 2;
+		for (int j = 0; j < recallPoints.size(); j++)
+		{
+			double currDiff = abs(p_r_points.at(i).x - recallPoints.at(j));
+			if (currDiff <= minDiffSoFar)
+			{
+				minDiffSoFar = currDiff;
+				nearestIndex = j;
+			}
+		}
+		p_r_points.at(i).x = recallPoints.at(nearestIndex);
+	}
 
 	for (int rp = 0; rp < recallPoints.size(); rp++)
 	{
@@ -221,13 +232,13 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID)
 		precisionRecallCurve.push_back(cv::Point2d(recallPoints.at(rp),maxPrecision));
 	}
 
+	double maxPrecisionSoFar = 0.0;
 	for (int rp = precisionRecallCurve.size() - 1; rp >=0; rp--)
 	{
-		double maxPrecisionSoFar = 0.0;
-		if (precisionRecallCurve.at(rp).y <= maxPrecisionSoFar)
-			precisionRecallCurve.at(rp).y = maxPrecisionSoFar;
-		else
+		if (precisionRecallCurve.at(rp).y >= maxPrecisionSoFar)
 			maxPrecisionSoFar = precisionRecallCurve.at(rp).y;
+		else
+			precisionRecallCurve.at(rp).y = maxPrecisionSoFar;
 	}
 
 	for (int rp = 0; rp < recallPoints.size();)
@@ -267,7 +278,7 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID)
 */
 std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 	int code,
-	
+
 	//always must-have
 	const cv::Mat& gT_FI_masks,
 	const std::string gT_FI_BBs,
@@ -276,6 +287,7 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 
 	std::vector<Prediction>& predictions,
 	std::set<int>& predictedClasses,
+	std::vector<std::pair<int, int>>& gTfoodItem_numbers,
 	int& gtf,
 
 	const cv::Mat& gT_leftover_masks,
@@ -299,7 +311,20 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 
 		for (const auto& gT_rect_fi : gT_rects_FI)
 		{
-			numberFoodItemsSingleImage++;
+
+		    numberFoodItemsSingleImage++;
+			int gTFoodItem_ID = gT_rect_fi.getRectId();
+			bool toAdd = true;
+			for (auto& pair : gTfoodItem_numbers)
+			{
+				if (pair.first == gTFoodItem_ID)
+				{
+					pair.second++;
+					toAdd = false;
+					break;
+				}
+			}
+			if (toAdd) { gTfoodItem_numbers.push_back(std::make_pair(gTFoodItem_ID, 1)); }
 
 			bool foundMatch = false;
 
@@ -352,7 +377,22 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 			//"For food localization and food segmentation you need to evaluate your 
 			//system on the “before” images and the images for difficulties 1) and 2) "
 			if (code == 1 || code == 2)
+			{
 				numberFoodItemsSingleImage++;
+				int gTFoodItem_ID = gT_rect_lo.getRectId();
+				bool toAdd = true;
+				for (auto& pair : gTfoodItem_numbers)
+				{
+					if (pair.first == gTFoodItem_ID)
+					{
+						pair.second++;
+						toAdd = false;
+						break;
+					}
+				}
+				if (toAdd) { gTfoodItem_numbers.push_back(std::make_pair(gTFoodItem_ID, 1)); }
+
+			}
 
 			bool foundMatch = false;
 

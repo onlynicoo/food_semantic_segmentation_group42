@@ -37,7 +37,7 @@ int main( int argc, char** argv ) {
     */
     std::vector<Tray> trayVecRandom;
 
-    int randomTrays = 3;
+    int randomTrays = 5;
     srand(static_cast<unsigned int>(time(0)));
     for (int i=0; i<randomTrays; i++)
     {
