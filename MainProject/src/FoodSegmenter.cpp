@@ -116,15 +116,14 @@ void FoodSegmenter::getFoodMaskFromPlate(const cv::Mat& src, cv::Mat& mask, cv::
  * the food items that have been found in the image.
  * @return Nothing is being returned. The function is void, meaning it does not return any value.
  */
-void FoodSegmenter::getFoodMaskFromPlates(
-    const cv::Mat& src, cv::Mat& mask, std::vector<cv::Vec3f> plates, std::vector<int> labelsFound) {
+void FoodSegmenter::getFoodMaskFromPlates(const cv::Mat& src, cv::Mat& mask, std::vector<cv::Vec3f> plates, std::vector<int>& labelsFound) {
     cv::Mat segmentationMask(src.size(), CV_8UC1, cv::Scalar(0));
 
     cv::Mat labels;
     HistogramComparator::readLabelHistogramsFromFile(labels);
 
     std::vector<std::vector<HistogramComparator::LabelDistance>> platesLabelDistances;
-    std::vector<int> allowedLabels;
+    std::vector<int> allowedLabels, curLabels;
     std::vector<cv::Mat> platesMasks;
 
     allowedLabels = Utils::getVectorUnion(FIRST_PLATES_LABELS, Utils::getVectorUnion(SECOND_PLATES_LABELS, SIDE_DISHES_LABELS));
@@ -207,13 +206,13 @@ void FoodSegmenter::getFoodMaskFromPlates(
     }
 
     for (int i = 0; i < plates.size(); i++) {
-        std::cout << "Plate " << i << std::endl;
 
         int foodLabel = platesLabelDistances[i][0].label;
         double labelDistance = platesLabelDistances[i][0].distance;
 
         // If it is a first plate, we have finished
         if (Utils::getIndexInVector(FIRST_PLATES_LABELS, foodLabel) != -1) {
+
             // Refine segmentation
             FoodSegmenter::refineMask(src, platesMasks[i], foodLabel);
 
@@ -223,7 +222,9 @@ void FoodSegmenter::getFoodMaskFromPlates(
                     if (platesMasks[i].at<uchar>(r, c) != 0)
                         segmentationMask.at<uchar>(r, c) = int(platesMasks[i].at<uchar>(r, c) * foodLabel);
 
-            std::cout << "Label found: " << LABEL_NAMES[foodLabel] << std::endl;
+            curLabels.push_back(foodLabel);
+            std::cout << "Found " << LABEL_NAMES[foodLabel] << std::endl;
+
         } else {
             // We have to split the mask into more foods
             allowedLabels = Utils::getVectorUnion(SECOND_PLATES_LABELS, SIDE_DISHES_LABELS);
@@ -393,10 +394,14 @@ void FoodSegmenter::getFoodMaskFromPlates(
                         if (foodMasks[j].at<uchar>(r, c) != 0)
                             segmentationMask.at<uchar>(r, c) = int(foodMasks[j].at<uchar>(r, c) * foodLabel);
 
-                std::cout << "Label found: " << LABEL_NAMES[foodLabel] << std::endl;
+                curLabels.push_back(foodLabel);
+                std::cout << "Found " << LABEL_NAMES[foodLabel] << std::endl;
             }
         }
     }
+
+    if (labelsFound.empty())
+        labelsFound = curLabels;
 
     mask = segmentationMask;
 }
@@ -479,6 +484,7 @@ void FoodSegmenter::getBreadMask(const cv::Mat& src, const cv::Mat& breadArea, c
     cv::morphologyEx(breadArea, erodedMask, cv::MORPH_ERODE, kernelErosion, cv::Point(1, 1), 3);
 
     cv::Rect bbx = cv::boundingRect(erodedMask);
+    
     if (bbx.empty()) {
         breadMask = cv::Mat(src.rows, src.cols, CV_8UC1, cv::Scalar(0));
         return;

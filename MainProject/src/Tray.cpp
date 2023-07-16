@@ -74,27 +74,6 @@ void writeBoundingBoxFile(const cv::Mat& mask, std::string filePath) {
 }
 
 /**
- * The function `getLabelsFound` takes a mask image as input and returns a vector of labels that are
- * found in the mask.
- * 
- * @param mask The "mask" parameter is a cv::Mat object, which represents a binary image. It is used to
- * identify regions of interest in an image. In this code, the function "getLabelsFound" takes this
- * mask as input and returns a vector of integers representing the labels found in the mask.
- * 
- * @return a vector of integers, which contains the labels found in the given mask.
- */
-std::vector<int> getLabelsFound(const cv::Mat& mask) {
-    std::vector<int> labelsFound;
-
-    // For each possible food, if it's present in the mask than insert it in `labelsFoun`
-    for (int i = 1; i < 14; i++)
-        if (cv::countNonZero((mask == i)) > 0)
-            labelsFound.push_back(i);
-
-    return labelsFound;
-}
-
-/**
  * The function `segmentImage` takes an input image, segments different food items in the image, and
  * returns a gray scale mask representing the segmented regions.
  * 
@@ -110,6 +89,11 @@ void Tray::segmentImage(const cv::Mat& src, cv::Mat& dst, std::vector<int>& labe
 
     cv::Mat segmentationMask(src.size(), CV_8UC1, cv::Scalar(0));
 
+    if (labelsFound.empty())
+        std::cout << "food_image:" << std::endl;
+    else
+        std::cout << "\nleftover:" << std::endl;
+
     // Segment food in plates
     cv::Mat plateFoodsMask;
     std::vector<cv::Vec3f> foodPlates = FoodFinder::findPlates(src);
@@ -124,17 +108,25 @@ void Tray::segmentImage(const cv::Mat& src, cv::Mat& dst, std::vector<int>& labe
     if (saladBowls.size() != 0) {
         FoodSegmenter::getSaladMaskFromBowl(src, saladMask, saladBowls[0]);
         segmentationMask += saladMask;
+
+        int saladLabel = FoodSegmenter::SALAD_LABEL;
+        labelsFound.push_back(saladLabel);
+        std::cout << "Found " << FoodSegmenter::LABEL_NAMES[saladLabel] << std::endl;
     }
 
     // Segment bread
     cv::Mat breadArea;
     FoodFinder::findBread(src, breadArea);
-    cv::Mat breadMask;
-    FoodSegmenter::getBreadMask(src, breadArea, breadMask);
-    segmentationMask += breadMask;
 
-    // Store labels found
-    labelsFound = getLabelsFound(segmentationMask);
+    if (cv::countNonZero(breadArea) != 0) {
+        cv::Mat breadMask;
+        FoodSegmenter::getBreadMask(src, breadArea, breadMask);
+        segmentationMask += breadMask;
+
+        int breadLabel = FoodSegmenter::BREAD_LABEL;
+        labelsFound.push_back(breadLabel);
+        std::cout << "Found " << FoodSegmenter::LABEL_NAMES[breadLabel] << std::endl;
+    }
 
     dst = segmentationMask;
 }

@@ -15,12 +15,12 @@ class FoodSegmenter {
         static const std::vector<int> SIDE_DISHES_LABELS;
         static const std::string LABEL_NAMES[14];
 
-        static void getFoodMaskFromPlate(const cv::Mat&, cv::Mat &, cv::Vec3f );
-        static void getFoodMaskFromPlates(const cv::Mat&, cv::Mat &, std::vector<cv::Vec3f> , std::vector<int> );
-        static void getSaladMaskFromBowl(const cv::Mat&, cv::Mat &, cv::Vec3f );
-        static void getBreadMask(const cv::Mat&, const cv::Mat&, cv::Mat& );
-        static void refinePestoPasta(const cv::Mat&, cv::Mat& );
-        static void refineTomatoPasta(const cv::Mat&, cv::Mat& );
-        static void refinePorkCutlet(const cv::Mat&, cv::Mat &);
-        static void refineMask(const cv::Mat&, cv::Mat& , int );
+        static void getFoodMaskFromPlate(const cv::Mat&, cv::Mat&, cv::Vec3f);
+        static void getFoodMaskFromPlates(const cv::Mat&, cv::Mat&, std::vector<cv::Vec3f> , std::vector<int>&);
+        static void getSaladMaskFromBowl(const cv::Mat&, cv::Mat&, cv::Vec3f);
+        static void getBreadMask(const cv::Mat&, const cv::Mat&, cv::Mat&);
+        static void refinePestoPasta(const cv::Mat&, cv::Mat&);
+        static void refineTomatoPasta(const cv::Mat&, cv::Mat&);
+        static void refinePorkCutlet(const cv::Mat&, cv::Mat&);
+        static void refineMask(const cv::Mat&, cv::Mat& , int);
 };
