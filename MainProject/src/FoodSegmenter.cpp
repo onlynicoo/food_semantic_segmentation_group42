@@ -386,7 +386,7 @@ void FoodSegmenter::getFoodMaskFromPlates(
                 foodLabel = keptLabels[j];
 
                 // Refine segmentation
-                FoodSegmenter::refineMask(src, platesMasks[i], foodLabel);
+                FoodSegmenter::refineMask(src, foodMasks[j], foodLabel);
 
                 for (int r = 0; r < segmentationMask.rows; r++)
                     for (int c = 0; c < segmentationMask.cols; c++)
@@ -413,6 +413,7 @@ void FoodSegmenter::getFoodMaskFromPlates(
  * coordinates (x, y) and the radius of the bowl.
  */
 void FoodSegmenter::getSaladMaskFromBowl(const cv::Mat& src, cv::Mat& mask, cv::Vec3f bowl) {
+
     cv::Point center(bowl[0], bowl[1]);
     int radius = bowl[2];
 
@@ -692,6 +693,7 @@ void FoodSegmenter::refineTomatoPasta(const cv::Mat& src, cv::Mat& mask) {
  * reference.
  */
 void FoodSegmenter::refinePorkCutlet(const cv::Mat& src, cv::Mat& mask) {
+
     // Close the holes borders
     int closingSize = cv::boundingRect(mask).height / 4;
     cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(closingSize, closingSize));
