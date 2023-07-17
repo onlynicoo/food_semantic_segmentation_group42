@@ -2,7 +2,7 @@
 
 #include <opencv2/opencv.hpp>
 
-#include "../include/HistogramComparator.h"
+#include "../include/HistogramThresholder.h"
 #include "../include/Utils.h"
 
 const std::vector<int> FoodSegmenter::FIRST_PLATES_LABELS{1, 2, 3, 4, 5};
@@ -120,10 +120,10 @@ void FoodSegmenter::getFoodMaskFromPlates(const cv::Mat& src, cv::Mat& mask, std
     
     cv::Mat segmentationMask(src.size(), CV_8UC1, cv::Scalar(0));
 
-    cv::Mat labels;
-    HistogramComparator::readLabelHistogramsFromFile(labels);
+    cv::Mat labelsHistograms;
+    HistogramThresholder::readLabelsHistogramsFromFile(labelsHistograms);
 
-    std::vector<std::vector<HistogramComparator::LabelDistance>> platesLabelDistances;
+    std::vector<std::vector<HistogramThresholder::LabelDistance>> platesLabelDistances;
     std::vector<int> allowedLabels, curLabels;
     std::vector<cv::Mat> platesMasks;
 
@@ -145,10 +145,10 @@ void FoodSegmenter::getFoodMaskFromPlates(const cv::Mat& src, cv::Mat& mask, std
 
         platesMasks.push_back(tmpMask);
 
-        // Creates the histograms for the segmented patch
-        cv::Mat patchHistograms;
-        HistogramComparator::getImageHistograms(src, tmpMask, patchHistograms);
-        platesLabelDistances.push_back(HistogramComparator::getLabelDistances(labels, allowedLabels, patchHistograms));
+        // Evaluates the histogram for the segmented patch
+        cv::Mat patchHistogram;
+        HistogramThresholder::getImageHistogram(src, tmpMask, patchHistogram);
+        platesLabelDistances.push_back(HistogramThresholder::getLabelDistances(labelsHistograms, allowedLabels, patchHistogram));
     }
 
     // Choose best labels such that if there are more plates, they are one first and one second plate
@@ -257,9 +257,9 @@ void FoodSegmenter::getFoodMaskFromPlates(const cv::Mat& src, cv::Mat& mask, std
                     submask.copyTo(curMask(bbox)(windowRect));
 
                     // Find a label for each submask
-                    cv::Mat patchHistograms;
-                    HistogramComparator::getImageHistograms(src, curMask, patchHistograms);
-                    foodLabel = HistogramComparator::getLabelDistances(labels, allowedLabels, patchHistograms)[0].label;
+                    cv::Mat patchHistogram;
+                    HistogramThresholder::getImageHistogram(src, curMask, patchHistogram);
+                    foodLabel = HistogramThresholder::getLabelDistances(labelsHistograms, allowedLabels, patchHistogram)[0].label;
                     gridLabels.push_back(foodLabel);
                 }
             }
@@ -304,9 +304,9 @@ void FoodSegmenter::getFoodMaskFromPlates(const cv::Mat& src, cv::Mat& mask, std
                     submask.copyTo(curMask(bbox)(windowRect));
 
                     // Find a label for each submask
-                    cv::Mat patchHistograms;
-                    HistogramComparator::getImageHistograms(src, curMask, patchHistograms);
-                    foodLabel = HistogramComparator::getLabelDistances(labels, keptLabels, patchHistograms)[0].label;
+                    cv::Mat patchHistogram;
+                    HistogramThresholder::getImageHistogram(src, curMask, patchHistogram);
+                    foodLabel = HistogramThresholder::getLabelDistances(labelsHistograms, keptLabels, patchHistogram)[0].label;
                     labelMat[row][col] = foodLabel;
                 }
             }
@@ -378,7 +378,7 @@ void FoodSegmenter::getFoodMaskFromPlates(const cv::Mat& src, cv::Mat& mask, std
                     if (j == 0)
                         cv::drawContours(foodMasks[1], contours, -1, cv::Scalar(1), cv::FILLED);
                     else
-                        cv::drawContours(foodMasks[0], contours, -1, cv::Scalar(1), cv::FILLED);
+                        cv::drawContours(foodMasks[0], contours, -1, cv::Scalar(1), cv::FILLED);      
                 }
             }
 

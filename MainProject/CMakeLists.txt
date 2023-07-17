@@ -9,8 +9,8 @@ find_package(OpenCV REQUIRED)
 include_directories($(OpenCV_INCLUDE_DIRS))
 
 # Executables
-add_executable(LabelHistograms
-    src/LabelHistograms.cpp
+add_executable(EvaluateLabelsHistograms
+    src/EvaluateLabelsHistograms.cpp
 )
 
 add_executable(main
@@ -22,9 +22,9 @@ add_executable(mainTest
 )
 
 # Libraries
-add_library(HistogramComparator
-    include/HistogramComparator.h
-    src/HistogramComparator.cpp
+add_library(HistogramThresholder
+    include/HistogramThresholder.h
+    src/HistogramThresholder.cpp
 )
 
 add_library(FoodFinder
@@ -58,16 +58,16 @@ add_library(Utils
 )
 
 # Link libraries
-target_link_libraries(HistogramComparator ${OpenCV_LIBS})
+target_link_libraries(HistogramThresholder ${OpenCV_LIBS})
 target_link_libraries(FoodFinder ${OpenCV_LIBS})
 target_link_libraries(MetricsCalculation ${OpenCV_LIBS})
 target_link_libraries(FoodSegmenter ${OpenCV_LIBS})
 target_link_libraries(Test ${OpenCV_LIBS})
 
-target_link_libraries(LabelHistograms HistogramComparator)
+target_link_libraries(EvaluateLabelsHistograms HistogramThresholder)
 target_link_libraries(main Tray)
 target_link_libraries(mainTest Tray Test)
-target_link_libraries(FoodSegmenter HistogramComparator Utils)
+target_link_libraries(FoodSegmenter HistogramThresholder Utils)
 target_link_libraries(Test Tray MetricsCalculation)
 target_link_libraries(Tray FoodFinder FoodSegmenter Utils)
 
