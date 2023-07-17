@@ -29,15 +29,16 @@ const std::string FoodSegmenter::LABEL_NAMES[] = {
  * passed by reference.
  */
 void FoodSegmenter::getFoodMaskFromPlate(const cv::Mat& src, cv::Mat& mask, cv::Vec3f plate) {
+    
     cv::Point center(plate[0], plate[1]);
     int radius = plate[2];
 
     // Pre-process
     cv::Mat img;
     cv::GaussianBlur(src, img, cv::Size(5, 5), 0);
-    cv::cvtColor(img, img, cv::COLOR_BGR2HSV);
 
     // Find food mask
+    cv::cvtColor(img, img, cv::COLOR_BGR2HSV);
     mask = cv::Mat(img.rows, img.cols, CV_8U, cv::Scalar(0));
     for (int r = std::max(0, center.y - radius); r < std::min(center.y + radius + 1, img.rows); r++)
         for (int c = std::max(0, center.x - radius); c < std::min(center.x + radius + 1, img.cols); c++) {
@@ -85,7 +86,6 @@ void FoodSegmenter::getFoodMaskFromPlate(const cv::Mat& src, cv::Mat& mask, cv::
         keptContours = std::vector<std::vector<cv::Point>>(contours.begin(), contours.begin() + std::min(n, (int)contours.size()));
         for (int i = 0; i < keptContours.size(); i++) {
             double distance = std::abs(cv::pointPolygonTest(keptContours[i], center, true));
-            // std::cout << "Distance " << distance << std::endl;
             if (distance > radius * 0.75) {
                 keptContours.erase(keptContours.begin() + i);
                 i--;
@@ -117,6 +117,7 @@ void FoodSegmenter::getFoodMaskFromPlate(const cv::Mat& src, cv::Mat& mask, cv::
  * @return Nothing is being returned. The function is void, meaning it does not return any value.
  */
 void FoodSegmenter::getFoodMaskFromPlates(const cv::Mat& src, cv::Mat& mask, std::vector<cv::Vec3f> plates, std::vector<int>& labelsFound) {
+    
     cv::Mat segmentationMask(src.size(), CV_8UC1, cv::Scalar(0));
 
     cv::Mat labels;
@@ -181,8 +182,10 @@ void FoodSegmenter::getFoodMaskFromPlates(const cv::Mat& src, cv::Mat& mask, std
         }
 
         // Compute the loss between choosing the best first or second dish normalized using the worst label distance
-        double plate0NormalizedLoss = std::abs(platesLabelDistances[0][plate0FirstIdx].distance - platesLabelDistances[0][plate0SecondIdx].distance) / platesLabelDistances[0][platesLabelDistances[0].size() - 1].distance;
-        double plate1NormalizedLoss = std::abs(platesLabelDistances[1][plate1FirstIdx].distance - platesLabelDistances[1][plate1SecondIdx].distance) / platesLabelDistances[1][platesLabelDistances[1].size() - 1].distance;
+        double plate0NormalizedLoss = std::abs(platesLabelDistances[0][plate0FirstIdx].distance - platesLabelDistances[0][plate0SecondIdx].distance)
+            / platesLabelDistances[0][platesLabelDistances[0].size() - 1].distance;
+        double plate1NormalizedLoss = std::abs(platesLabelDistances[1][plate1FirstIdx].distance - platesLabelDistances[1][plate1SecondIdx].distance)
+            / platesLabelDistances[1][platesLabelDistances[1].size() - 1].distance;
 
         if (plate0NormalizedLoss < plate1NormalizedLoss) {
             // If plate 0 has less loss, give preference to plate 1
@@ -704,22 +707,6 @@ void FoodSegmenter::refinePorkCutlet(const cv::Mat& src, cv::Mat& mask) {
     int closingSize = cv::boundingRect(mask).height / 4;
     cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(closingSize, closingSize));
     morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
-
-    // Find contours in the mask
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-    // Sort contours based on area
-    std::sort(contours.begin(), contours.end(), [](const std::vector<cv::Point>& contour1, const std::vector<cv::Point>& contour2) {
-        return cv::contourArea(contour1) > cv::contourArea(contour2);
-    });
-
-    int n = 1;
-    std::vector<std::vector<cv::Point>> keptContours;
-    keptContours = std::vector<std::vector<cv::Point>>(contours.begin(), contours.begin() + std::min(n, (int)contours.size()));
-
-    mask = cv::Mat::zeros(mask.size(), CV_8UC1);
-    cv::drawContours(mask, keptContours, -1, cv::Scalar(1), cv::FILLED);
 }
 
 /**
