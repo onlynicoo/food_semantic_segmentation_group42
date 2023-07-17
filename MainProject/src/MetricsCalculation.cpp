@@ -2,19 +2,22 @@
 #include <sstream>
 #include <vector>
 #include <string>
+
 #include <opencv2/opencv.hpp>
+
 #include "../include/MetricsCalculation.h"
 
-/*
-	Given two BB file paths, this function will
-	open those files and read each record. It save
-	them into two specific structures:
-
-	std::vector<RectangleFileProf> for first input as prof's dataset BB_path
-	std::vector<RectangleFileOur> for second input as our's BB_path
-
-	It will return them as a pair, to be studied in second moment
-*/
+/**
+ * Given two BB file paths, this function will open those files
+ * and read each record. It save them into two specific structures:
+ * std::vector<RectangleFileProf> for first input as prof's dataset BB_path
+ * std::vector<RectangleFileOur> for second input as our's BB_path
+ * It will return them as a pair, to be studied in second moment.
+ *
+ * @param profBB_path path to ground truth bounding box .txt file
+ * @param ourBB_path path to a bounding box .txt file computed by our system
+ * @return a pair of vectors of specific types of rectangle. See RectangleFileProf and RectangleFileOur for more info
+ */
 std::pair<std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string profBB_path, std::string ourBB_path)
 {
 	std::ifstream fileProf(profBB_path);
@@ -92,7 +95,20 @@ std::pair<std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> boundin
 }
 
 
-
+/**
+ * Given two stl vectors of integers, representing a bounding box coordinates record for a food item, we:
+ * compute the rectangle, intersection of those two boxes.
+ * compute its area, in pixels (intersectionPixels).
+ * compute the area of the two boxes' union, in pixels (unionPixels).
+ * return the ratio intersectionPixels/unionPixels as IoU OF A SINGLE FOOD ITEM
+ * Notice that a single BB coordinates record (e.g: [x, y, w, h]) is composed of:
+ * x and y for top left pixel corner coordinates
+ * w and h respectively for width and height of the BB itself.
+ * 
+ * @param profBB ground truth bounding box coordinates record for a food item
+ * @param ourBB bounding box coordinates record for a food item, computed by our system
+ * @return a double representing intersection over union for a single food item
+ */
 double singlePlateFoodSegmentation_IoUMetric(const std::vector<int>& profBB, const std::vector<int>& ourBB)
 {
 	int x1 = std::max(profBB[0], ourBB[0]);
@@ -110,17 +126,17 @@ double singlePlateFoodSegmentation_IoUMetric(const std::vector<int>& profBB, con
 	double iou = (double)intersectionPixels / (double)unionPixels;
 
 	return  iou;
-
 }
 
-
-/*
-	Function that takes in input:
-	beforeMask and afterMask
-
-	This function returns the Leftover Estimation metric: R_i
-	R_i = #pixels in after image / #pixels in before image
-*/
+/**
+ * Function that takes in input two masks, respectively the food item in "Food_image" (before image)
+ * and the food item in "leftover" (after image). We compare the ratio of the pixels numbers of those masks
+ * R_i = #pixels for food i in the "after image" / #pixels for food i in the "before image"
+ * 
+ * @param beforeMask before food item mask
+ * @param afterMask after food item mask
+ * @return a double, ratio R_i previously described
+ */
 double singlePlateLeftoverEstimationMetric(const cv::Mat& beforeMask, const cv::Mat& afterMask)
 {
 	//beforeMask is mask of food before
@@ -140,14 +156,20 @@ double singlePlateLeftoverEstimationMetric(const cv::Mat& beforeMask, const cv::
 	return r_i;
 };
 
-/*
-	It calculates the Precision-Recall curve.
-	Also it gives us the AP for one single class of objects
-
-	For more info : https: // learnopencv.com/mean-average-precision-map-object-detection-model-evaluation-metric/
-					https: //towardsdatascience.com/a-better-map-for-object-detection-32662767d424
-					https:// jonathan-hui.medium.com/map-mean-average-precision-for-object-detection-45c121a31173
-*/
+/**
+ * Function that calculates the Precision-Recall curve.
+ * It calculates Average Precision (AP) using PASCAL VOC 11 point interpolation method 
+ * for one single object class. Useful online resources could be:
+ * https://learnopencv.com/mean-average-precision-map-object-detection-model-evaluation-metric/
+ * https://towardsdatascience.com/a-better-map-for-object-detection-32662767d424
+ * https://jonathan-hui.medium.com/map-mean-average-precision-for-object-detection-45c121a31173
+ * We calculate the AP, for each class, referring to all possible matches done during our tests
+ * 
+ * @param predictions is a vector of Prediction objects. Each one is a match with ground truth (TP or FP), based on a score
+ * @param classID the class for which we're calculting the AP (food classes)
+ * @param gtNumItemClass_pc the number of occasions of classID objects in ground truth (to calculate Recall)
+ * @return a double, AP of the system
+ */
 double calculateAP(const std::vector<Prediction>& predictions, int classID, int gtNumItemClass_pc)
 {
 	double ap = 0.0;
@@ -258,24 +280,29 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
 	return ap/11;
 }
 
-
-/*
-	Function that takes in input:
-
-	code: number from 0 (FoodImage) to 3 (Leftover 3)
-	gT_Masks: ImageMasks of GroundTruth (prof dataset)
-	gT_BBs: path to GroundTruth BBs (prof dataset)
-	ourMasks: Our image, with all food masks found
-	ourBBs: path to our BBs found
-
-	predictions: a structure to store all food detected by us. Look Prediction class to see more
-	predicted: a structure to store all class food we've studied previously
-
-	Optional parameters: (How "code" works).
-	We should perform specific analysis on specific results ("Not all to all")
-	beforeMasks: ImageMasks of GroundTruth TAKEN AS A "BEFORE IMAGE" (prof dataset)
-	beforeBBs: Our image, with all food masks found TAKEN AS A "AFTER IMAGE"
-*/
+/**
+ * During test part, after received a Tray obejct, and understood from 
+ * which taken was taken and which leftover was, we use this function as
+ * a launch pad for all performances metrics we've described in our report.
+ * For a single Tray objects we launch this function two times:
+ * To study and compare all info retrieved from "Food_Image" (Code 0)
+ * To study and compare all info retrieved from "leftoverY"	(Code Y)
+ * 
+ * @param code number from 0 (FoodImage) to 3 (leftover3)
+ * @param gT_FI_masks image mask of a ground truth's food image
+ * @param gT_FI_BBs path to gT_FI_masks bounding boxes .txt file
+ * @param ourMasks_FI image mask of food image computed by our system
+ * @param ourBBs_FI path to ourMasks_FI bounding boxes .txt file
+ * @param predictions vector in which we save all matches with ground truth food items
+ * @param predictedClasses a set of integers representing all classes we've analyzed so far
+ * @param gTfoodItem_numbers a vector saving a pair (classID, #occurenciesOfClassID), useful for mAP
+ * @param gtf an integer to take count of the Groun Truth Food items we've encountered so far
+ * @param gT_leftover_masks image mask of a ground truth's leftover image
+ * @param gT_leftover_BBs path to gT_leftover_masks bounding boxes .txt file
+ * @param ourMasks_leftover image mask of leftover image computed by our system
+ * @param ourBBs_leftover path to ourMasks_leftover bounding boxes .txt file
+ * @return a pair: (sum of all food items' IoU's found in an image, # of food item encountered) => e.g : (2.89477383,4)
+ */
 std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 	int code,
 

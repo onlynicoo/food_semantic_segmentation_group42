@@ -1,16 +1,33 @@
 #include <opencv2/opencv.hpp>
+
 #include <fstream>
 #include <sstream>
 #include <vector>
 #include <string>
+
 #include "../include/Test.h"
 #include "../include/Tray.h"
 #include "../include/MetricsCalculation.h"
 
-
+/**
+ * The Test constructor takes in input one single parameter: a stl
+ * vector of Tray objects. Within this vector, we will have all 
+ * possible info for all the metrics we need to evaluate our
+ * system performances. We will scan it (in several ways) to retrieve
+ * all food image and leftovers bounding box and masks infos and compare
+ * them to Ground Truth.
+ * 
+ * @param vecTray stl vector containing all Tray obects, previously computed
+ */
 Test::Test(std::vector<Tray> vecTray) :trayVector{ vecTray } {}
 
-
+/**
+ * The function `findTrayNumber' gives us an integer representing
+ * the tray number we're working on
+ *
+ * @param str path/string for a bounding box txt file
+ * @return an integer: the tray number
+ */
 int findTrayNumber(const std::string& str)
 {
 	std::istringstream iss(str);
@@ -35,6 +52,13 @@ int findTrayNumber(const std::string& str)
 	return trayNumber;
 }
 
+/**
+ * The function `findLeftoverNumber' gives us an integer representing
+ * the leftover number we're working on
+ *
+ * @param str path/string for a bounding box txt file
+ * @return an integer: the leftover number
+ */
 int findLeftoverNumber(const std::string& str)
 {
 	std::istringstream iss(str);
@@ -59,9 +83,19 @@ int findLeftoverNumber(const std::string& str)
 	return leftNumber;
 }
 
-
-//Hypothesis: trayVector must contain samples like this:
-//{(FOOD_IMAGE1/LEFTOVER1_F1),(FOOD_IMAGE1/LEFTOVER2_F1),(FOOD_IMAGE1/LEFTOVER3_F1),(FOOD_IMAGE2/LEFTOVER1_F2),...}
+/**
+ * The function `test_the_system' prints out all the info
+ * about performance's metrics we've discussed in our report.
+ * We take in input the "Food Leftover Dataset" by path, and we
+ * use its masks and bounding boxes to calculate:
+ * a) mAP of the system
+ * b) mIoU of the system
+ * c) leftover estimation
+ * ASSUMPTION: Test::trayVector must contain samples like this:
+ * {(F1/L1_F1),(F1/L2_F1),(F1/L3_F1),(F2/L1_F2),(F2/L2_F2),...}.
+ *
+ * @param dataSetPath path to "Food Leftover Dataset"
+ */
 void Test::test_the_system(const std::string& dataSetPath)
 {
 
@@ -177,9 +211,18 @@ void Test::test_the_system(const std::string& dataSetPath)
 	std::cout << "---ENDING TEST---";
 }
 
-
-
-
+/**
+ * The function `test_the_system_randomly' prints out all the info
+ * about performance's metrics we've discussed in our report.
+ * We take in input the "Food Leftover Dataset" by path, and we
+ * use its masks and bounding boxes to calculate:
+ * a) mAP of the system
+ * b) mIoU of the system
+ * c) leftover estimation
+ * ASSUMPTION: trayVector can contain each pair (FX/LY_X) in every order.
+ *
+ * @param dataSetPath path to "Food Leftover Dataset"
+ */
 void Test::test_the_system_randomly(const std::string& dataSetPath)
 {
 	std::cout << "---STARTING TEST---";

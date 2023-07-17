@@ -26,7 +26,6 @@ class Prediction {
 			: classID(cid), confidence(conf), isTruePositive(iTP) {}
 };
 
-
 /*
 	Structure useful for Metrics Calculation's steps
 	It takes into account the
@@ -51,8 +50,6 @@ class RectangleFileProf
 		RectangleFileProf(int id, const std::vector<int>& coords)
 			: rectID(id), coordinates(coords) {}
 };
-
-
 
 /*
 	Structure useful for for Metrics Calculation's steps
@@ -101,30 +98,27 @@ class RectangleFileOur
 
 std::pair<std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string, std::string);
 
-
-double singlePlateFoodSegmentation_IoUMetric(const std::vector<int>& profBB, const std::vector<int>& ourBB);
+double singlePlateFoodSegmentation_IoUMetric(const std::vector<int>&, const std::vector<int>&);
 
 double singlePlateLeftoverEstimationMetric(const cv::Mat&, const cv::Mat&);
 
-
 std::pair<double, int> OneImageSegmentation_MetricCalculations_(
-	int code,
+	int,
 
-	//always must-have
-	const cv::Mat& gT_FI_masks,
-	const std::string gT_FI_BBs,
-	const cv::Mat& ourMasks_FI,
-	std::string ourBBs_FI,
+	const cv::Mat&,
+	const std::string,
+	const cv::Mat&,
+	std::string,
 
-	std::vector<Prediction>& predictions,
-	std::set<int>& predictedClasses,
-	std::vector<std::pair<int,int>>& gTfoodItem_numbers,
-	int& gtf,
+	std::vector<Prediction>&,
+	std::set<int>&,
+	std::vector<std::pair<int,int>>&,
+	int&,
 
-	const cv::Mat& gT_leftover_masks,
-	const std::string gT_leftover_BBs,
-	const cv::Mat& ourMasks_leftover,
-	const std::string ourBBs_leftover
+	const cv::Mat&,
+	const std::string,
+	const cv::Mat&,
+	const std::string
 );
 
 double calculateAP(const std::vector<Prediction>&, int,int);
