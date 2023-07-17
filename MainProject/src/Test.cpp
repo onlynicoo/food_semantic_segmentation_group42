@@ -124,6 +124,13 @@ void Test::test_the_system(const std::string& dataSetPath)
 		*/
 		for (int j = i; j - i < 3; j++)
 		{
+
+			if(j >= trayVector.size())
+			{
+				break;
+			}
+
+
 			//Leftover masks and bbs
 			Tray t_loj = trayVector.at(j);
 
@@ -163,7 +170,7 @@ void Test::test_the_system(const std::string& dataSetPath)
 		}
 		sumAP += calculateAP(predictions, pc, gtNumItemClass_pc);
 	}
-	double mAP = sumAP / groundTruthFoods;
+	double mAP = sumAP / predictedClasses.size();
 
 	std::cout << "mAP = " << mAP << "\n";
 	std::cout << "mIoU = " << mIoU << "\n";
