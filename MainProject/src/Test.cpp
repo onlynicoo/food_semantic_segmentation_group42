@@ -205,6 +205,24 @@ void Test::test_the_system(const std::string& dataSetPath)
 			for (const auto& pcot : predictedClassesOneTray)
 				predictedClassesOneTrayLeftover.insert(pcot);
 
+			for (int not_= 0; not_ < gTfoodItem_numbersOneTray.size(); not_++)
+			{
+				std::pair<int,int> not = gTfoodItem_numbersOneTray.at(not_);
+				bool setted = false;
+				for (int notl_ = 0; notl_ < gTfoodItem_numbersOneTrayLeftover.size(); notl_++)
+				{
+					std::pair<int, int> notl = gTfoodItem_numbersOneTrayLeftover.at(notl_);
+					if (not.first == notl.first)
+					{
+						notl.second = notl.second + not.second;
+						setted = true;
+					}
+				}
+				if (!setted)
+					gTfoodItem_numbersOneTrayLeftover.push_back(std::make_pair(not.first, not.second));
+			}
+			
+			/*
 			for (const auto & not : gTfoodItem_numbersOneTray)
 			{
 				bool setted = false;
@@ -217,7 +235,7 @@ void Test::test_the_system(const std::string& dataSetPath)
 				if (!setted)
 					gTfoodItem_numbersOneTrayLeftover.push_back(std::make_pair(not.first, not.second));
 			}
-
+			*/
 
 			//Computing tray mAP
 			double sumAPTrayLeftover = 0.0;
@@ -383,8 +401,6 @@ void Test::test_the_system_randomly(const std::string& dataSetPath)
 		mIoU = temp / groundTruthFoods;
 
 
-
-
 		//Computing tray mAP
 		double sumAPTray = 0.0;
 		for (const auto& pc_ot : predictedClassesOneTray)
@@ -409,7 +425,26 @@ void Test::test_the_system_randomly(const std::string& dataSetPath)
 		for (const auto& pcot : predictedClassesOneTray)
 			predictedClasses.insert(pcot);
 
-		for (const auto & not : gTfoodItem_numbersOneTray)
+
+		for (int not_ = 0; not_ < gTfoodItem_numbersOneTray.size(); not_++)
+		{
+			std::pair<int,int> not = gTfoodItem_numbersOneTray.at(not_);
+			bool setted = false;
+			for (int n_ = 0; n_ < gTfoodItem_numbers.size(); n_++)
+			{
+				std::pair<int, int> n = gTfoodItem_numbers.at(n_);
+				if (not.first == n.first)
+				{
+					n.second = n.second + not.second;
+					setted = true;
+				}
+			}		
+			if (!setted)
+				gTfoodItem_numbers.push_back(std::make_pair(not.first, not.second));
+		}
+
+		/*
+		for (const auto& not : gTfoodItem_numbersOneTray)
 		{	
 			bool setted = false;
 			for (auto& n : gTfoodItem_numbers)
@@ -421,7 +456,7 @@ void Test::test_the_system_randomly(const std::string& dataSetPath)
 			if (!setted)
 				gTfoodItem_numbers.push_back(std::make_pair(not.first, not.second));
 		}
-
+		*/
 
 		predictionsOneTray.clear();
 		predictedClassesOneTray.clear();
