@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
                 cv::Mat labelMask;
                 compare(mask, label, labelMask, cv::CMP_EQ);
 
-                if (cv::countNonZero(labelMask) == 0)
+                if (cv::countNonZero(labelMask) == 0 || label == 12 || label == 13)
                     continue;
 
                 // If not empty, compute histogram for the patch
