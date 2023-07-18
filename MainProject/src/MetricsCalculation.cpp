@@ -18,28 +18,29 @@
  * @param ourBB_path path to a bounding box .txt file computed by our system
  * @return a pair of vectors of specific types of rectangle. See RectangleFileProf and RectangleFileOur for more info
  */
-std::pair<std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string profBB_path, std::string ourBB_path)
+std::pair<std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string gtBB_path, std::string ourBB_path)
 {
-	std::ifstream fileProf(profBB_path);
+	std::ifstream fileGT(gtBB_path);
 
-	std::string lineP;
+	std::string lineGT;
 
-	std::vector<RectangleFileProf> rectanglesProf;
+	std::vector<RectangleFileGT> rectanglesGT;
 
-	// Leggi il primo file e salva i rettangoli
-	while (std::getline(fileProf, lineP)) {
-		std::stringstream ssP(lineP);
+	
+	//Read the first file and save its bounding boxes records
+	while (std::getline(fileGT, lineGT)) {
+		std::stringstream ssGT(lineGT);
 		std::string token;
 
-		// Estrai l'ID
-		std::getline(ssP, token, ':'); // Ignora il testo "ID"
-		std::getline(ssP, token, ';'); // Estrai il token successivo fino al carattere ';'
-		token = token.substr(1); // Ignora lo spazio dopo ':'
-		int id = std::stoi(token); // Converte il token in un intero
+		// Extract the ID
+		std::getline(ssGT, token, ':'); // Ignore the text "ID"
+		std::getline(ssGT, token, ';'); // Extract the next token, till char ';'
+		token = token.substr(1); // Ignore space after char ':'
+		int id = std::stoi(token); // Convert the token into an integer value
 
 		std::string coords;
-		std::getline(ssP, coords, '[');
-		std::getline(ssP, coords, ']');
+		std::getline(ssGT, coords, '[');
+		std::getline(ssGT, coords, ']');
 
 		std::stringstream ssCoords(coords);
 		std::string coordToken;
@@ -50,7 +51,7 @@ std::pair<std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> boundin
 		}
 
 		if (coordinates.size() == 4) {
-			rectanglesProf.push_back(RectangleFileProf(id, coordinates));
+			rectanglesGT.push_back(RectangleFileGT(id, coordinates));
 		}
 	}
 
@@ -59,16 +60,16 @@ std::pair<std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> boundin
 	std::string lineO;
 	std::vector<RectangleFileOur> rectanglesOur;
 
-	// Leggi il secondo file e salva i rettangoli
+	//Read the second file and save its bounding boxes records
 	while (std::getline(fileOur, lineO)) {
 		std::stringstream ssO(lineO);
 		std::string token;
 
-		// Estrai l'ID
-		std::getline(ssO, token, ':'); // Ignora il testo "ID"
-		std::getline(ssO, token, ';'); // Estrai il token successivo fino al carattere ';'
-		token = token.substr(1); // Ignora lo spazio dopo ':'
-		int id = std::stoi(token); // Converte il token in un intero
+		// Extract the ID
+		std::getline(ssO, token, ':'); // Ignore the text "ID"
+		std::getline(ssO, token, ';'); // Extract the next token, till char ';'
+		token = token.substr(1); // Ignore space after char ':'
+		int id = std::stoi(token); // Convert the token into an integer value
 
 		std::string coords;
 		std::getline(ssO, coords, '[');
@@ -87,10 +88,10 @@ std::pair<std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> boundin
 		}
 	}
 
-	fileProf.close();
+	fileGT.close();
 	fileOur.close();
 
-	return std::make_pair(rectanglesProf, rectanglesOur);
+	return std::make_pair(rectanglesGT, rectanglesOur);
 
 }
 
@@ -109,19 +110,21 @@ std::pair<std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> boundin
  * @param ourBB bounding box coordinates record for a food item, computed by our system
  * @return a double representing intersection over union for a single food item
  */
-double singlePlateFoodSegmentation_IoUMetric(const std::vector<int>& profBB, const std::vector<int>& ourBB)
+double singlePlateFoodSegmentation_IoUMetric(const std::vector<int>& gtBB, const std::vector<int>& ourBB)
 {
-	int x1 = std::max(profBB[0], ourBB[0]);
-	int y1 = std::max(profBB[1], ourBB[1]);
-	int x2 = std::min(profBB[0] + profBB[2], ourBB[0] + ourBB[2]);
-	int y2 = std::min(profBB[1] + profBB[3], ourBB[1] + ourBB[3]);
+	// Compute intersection rectangle top left corner
+	int x1 = std::max(gtBB[0], ourBB[0]);
+	int y1 = std::max(gtBB[1], ourBB[1]);
+	int x2 = std::min(gtBB[0] + gtBB[2], ourBB[0] + ourBB[2]);
+	int y2 = std::min(gtBB[1] + gtBB[3], ourBB[1] + ourBB[3]);
 
+	// Compute intersection rectangle dimensions
 	int width = std::max(0, x2 - x1);
 	int height = std::max(0, y2 - y1);
 
 	int intersectionPixels = width * height;
 	
-	int unionPixels = profBB[2] * profBB[3] + ourBB[2] * ourBB[3] - intersectionPixels;
+	int unionPixels = gtBB[2] * gtBB[3] + ourBB[2] * ourBB[3] - intersectionPixels;
 
 	double iou = (double)intersectionPixels / (double)unionPixels;
 
@@ -176,24 +179,21 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
 	int cumulativeTP = 0;
 	int cumulativeFP = 0;
 
-	// Ordina le predizioni in ordine decrescente di confidenza
+	// We have to sort the predictions by decreasing order of confidence score
 	std::vector<Prediction> sortedPredictions = predictions;
 
-
-	// Trova la posizione iniziale degli elementi con classe 'id'
+	// We put first element of classID
 	auto partitionIter = std::partition(sortedPredictions.begin(), sortedPredictions.end(), [classID](const Prediction& pred) {
 		return pred.getClassId() == classID;
 		});
 
-	// Ordina gli elementi con classe 'id' in ordine decrescente di confidenza
+	// We sort the predictions by decreasing order of confidence score
 	std::sort(sortedPredictions.begin(), partitionIter, [](const Prediction& a, const Prediction& b) {
 		return a.getConfidence() > b.getConfidence();
 		});
 
 
-
-
-	// Calcola i valori di precisione e recall per ogni predizione
+	// Computing precision and recall values for each prediction
 	std::vector<double> precision;
 	std::vector<double> recall;
 	std::vector<cv::Point2d> p_r_points; //X recall - Y precision
@@ -208,23 +208,20 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
 
 			double currPrecision = static_cast<double>(cumulativeTP) / (cumulativeTP + cumulativeFP);
 			double currRecall = static_cast<double>(cumulativeTP) / gtNumItemClass_pc;
-
 			p_r_points.push_back(cv::Point2d(currRecall, currPrecision));
-			//precision.push_back(currPrecision);
-			//recall.push_back(currRecall);
-
 		}
 	}
 
-	// Calcola l'Average Precision (AP) utilizzando l'interpolazione a 11 punti di recall
+	// Calculate the Average Precision (AP) using 11-recall points interpolation technique
 	std::vector<double> recallPoints = { 0.0, 0.100, 0.200, 0.300, 0.400, 0.500, 0.600, 0.700, 0.800, 0.900, 1.000 };
 	std::vector<cv::Point2d> precisionRecallCurve;
 
-	// Ordina gli elementi con recall in ordine decrescente di confidenza
+	// Sort each p_r point by decreasing order of confidence
 	std::sort(p_r_points.begin(), p_r_points.end(), [](const cv::Point2d& a, const cv::Point2d& b) {
 		return a.x < b.x;
 		});
 
+	// Associate each p_r point to the nearest one among the 11 points
 	for (int i = 0; i < p_r_points.size(); i++)
 	{
 		int nearestIndex = -1;
@@ -241,6 +238,8 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
 		p_r_points.at(i).x = recallPoints.at(nearestIndex);
 	}
 
+	// For each p_r point we associate as y the highest
+	// precision value among all the precision values with same recall
 	for (int rp = 0; rp < recallPoints.size(); rp++)
 	{
 		double maxPrecision = -1;
@@ -254,6 +253,7 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
 		precisionRecallCurve.push_back(cv::Point2d(recallPoints.at(rp),maxPrecision));
 	}
 
+	//INTERPOLATION. MAX TO THE RIGHT
 	double maxPrecisionSoFar = 0.0;
 	for (int rp = precisionRecallCurve.size() - 1; rp >=0; rp--)
 	{
@@ -263,6 +263,7 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
 			precisionRecallCurve.at(rp).y = maxPrecisionSoFar;
 	}
 
+	// Sum each contribute from the 11 points
 	for (int rp = 0; rp < recallPoints.size();)
 	{
 		double soFarPrec = precisionRecallCurve.at(rp).y;
@@ -277,12 +278,13 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
 		ap += soFarCounter * soFarPrec;
 	}
 
+	//Normalize by factor 11
 	return ap/11;
 }
 
 /**
- * During test part, after received a Tray obejct, and understood from 
- * which taken was taken and which leftover was, we use this function as
+ * During test part, after received a Tray object, and understood from 
+ * which tray was taken and which leftover was, we use this function as
  * a launch pad for all performances metrics we've described in our report.
  * For a single Tray objects we launch this function two times:
  * To study and compare all info retrieved from "Food_Image" (Code 0)
@@ -306,7 +308,6 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
 std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 	int code,
 
-	//always must-have
 	const cv::Mat& gT_FI_masks,
 	const std::string gT_FI_BBs,
 	const cv::Mat& ourMasks_FI,
@@ -323,7 +324,7 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 	const std::string ourBBs_leftover
 )
 {
-	std::string output = "\n\nR_i's found: {   ";
+	std::string output = "\nR_i's found: {   ";
 	double sum_iou = 0.0;
 
 	int numberFoodItemsSingleImage = 0;
@@ -332,8 +333,8 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 	if (code == 0)
 	{
 
-		std::pair< std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> rectsForIoU = boundingBoxFileTokenizer(gT_FI_BBs, ourBBs_FI);
-		std::vector<RectangleFileProf> gT_rects_FI = rectsForIoU.first;
+		std::pair< std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> rectsForIoU = boundingBoxFileTokenizer(gT_FI_BBs, ourBBs_FI);
+		std::vector<RectangleFileGT> gT_rects_FI = rectsForIoU.first;
 		std::vector<RectangleFileOur> our_rects_FI = rectsForIoU.second;
 
 		for (const auto& gT_rect_fi : gT_rects_FI)
@@ -368,7 +369,7 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 					our_rect_fi.setPrediction(single_iou);
 					sum_iou += single_iou;
 
-					std::cout << "\nFor food item " << our_rect_fi.getRectId() << ", its IoU => " << single_iou << '\n';
+					std::cout << "\nFood " << our_rect_fi.getRectId() << ", IoU = " << single_iou;
 
 					break;
 				}
@@ -377,7 +378,7 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 			if (!foundMatch) {
 				//There's no match, no food item founded in our FOOD IMAGE (BAD NEWS)
 				// numberFoodsGroundTruth++ && iou+=0 means that our mIoU will be lower
-				//std::cout << "\n\n" << "NIENTE MATCH PER CIBO: " << gT_rect_fi.getRectId() << " in " << gT_FI_BBs;
+				//std::cout << "\n\n" << "NO MATCH FOR FOOD: " << gT_rect_fi.getRectId() << " in " << gT_FI_BBs;
 			}
 
 		}
@@ -395,8 +396,8 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 
 	else if (code == 1 || code == 2 )
 	{
-		std::pair< std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> rectsForIoU = boundingBoxFileTokenizer(gT_leftover_BBs, ourBBs_leftover);
-		std::vector<RectangleFileProf> gT_rects_LO = rectsForIoU.first;
+		std::pair< std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> rectsForIoU = boundingBoxFileTokenizer(gT_leftover_BBs, ourBBs_leftover);
+		std::vector<RectangleFileGT> gT_rects_LO = rectsForIoU.first;
 		std::vector<RectangleFileOur> our_rects_LO = rectsForIoU.second;
 
 		for (const auto& gT_rect_lo : gT_rects_LO)
@@ -436,7 +437,7 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 					double single_iou = singlePlateFoodSegmentation_IoUMetric(gT_rect_lo.getCoords(), our_rect_lo.getCoords());
 					our_rect_lo.setPrediction(single_iou);
 
-					std::cout << "\nFor food item " << our_rect_lo.getRectId() << ", its IoU => " << single_iou << '\n';
+					std::cout << "\nFood " << our_rect_lo.getRectId() << ", IoU = " << single_iou;
 
 					sum_iou += single_iou;
 
@@ -447,7 +448,7 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 			if (!foundMatch) {
 				//There's no match, no food item founded in our FOOD IMAGE (BAD NEWS)
 				// numberFoodsGroundTruth++ && iou+=0 means that our mIoU will be lower
-				//std::cout << "\n" << "NIENTE MATCH PER CIBO: " << gT_rect_lo.getRectId() << " in " << gT_leftover_BBs;
+				//std::cout << "\n" << "NO MATCH FOR FOOD: " << gT_rect_lo.getRectId() << " in " << gT_leftover_BBs;
 			}
 
 		}
@@ -466,11 +467,11 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 	//Leftover Estimation
 	if (code!=0)
 	{
-		std::pair< std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> rectsForLE_FI = boundingBoxFileTokenizer(gT_FI_BBs, ourBBs_FI);
-		std::pair< std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> rectsForLE_LO = boundingBoxFileTokenizer(gT_leftover_BBs, ourBBs_leftover);
-		std::vector<RectangleFileProf> gT_rects_FI = rectsForLE_FI.first;
+		std::pair< std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> rectsForLE_FI = boundingBoxFileTokenizer(gT_FI_BBs, ourBBs_FI);
+		std::pair< std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> rectsForLE_LO = boundingBoxFileTokenizer(gT_leftover_BBs, ourBBs_leftover);
+		std::vector<RectangleFileGT> gT_rects_FI = rectsForLE_FI.first;
 		std::vector<RectangleFileOur> our_rects_FI = rectsForLE_FI.second;
-		std::vector<RectangleFileProf> gT_rects_LO = rectsForLE_LO.first;
+		std::vector<RectangleFileGT> gT_rects_LO = rectsForLE_LO.first;
 		std::vector<RectangleFileOur> our_rects_LO = rectsForLE_LO.second;
 
 
@@ -493,8 +494,8 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 					cv::Mat oneMask_OURLO(ourMasks_leftover.size(), CV_8UC1, cv::Scalar(255));
 
 					int ourLeftoverPixels = 0;
-					int profLeftoverPixels = 0;
-					//COMPARIAMO MASCHERE LEFTOVER NOSTRO CON LEFTOVER PROF => R_i CALCULATIONS
+					int profLeftoverPixels = 0; 
+					// COMPARING OUR LEFTOVER MASKS WITH GROUND TRUTH'S ONES => R_i CALCULATIONS
 					for (int row = our_rect_lo.getCoords().at(1); row < our_rect_lo.getCoords().at(1) + our_rect_lo.getCoords().at(3); row++)
 					{
 						for (int col = our_rect_lo.getCoords().at(0); col < our_rect_lo.getCoords().at(0) + our_rect_lo.getCoords().at(2); col++)
@@ -514,8 +515,8 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 							}
 					}
 
-					std::cout << "\nour leftover's pixels for food item " << our_rect_lo.getRectId() << " are: " << ourLeftoverPixels;
-					std::cout << "\nABS of the differences in pixels for food item " << our_rect_lo.getRectId() << " is: " << abs(ourLeftoverPixels - profLeftoverPixels);
+					std::cout << "\nLeftover's pixels. Food " << our_rect_lo.getRectId() << ": " << ourLeftoverPixels;
+					std::cout << "\nABS of difference. Food " << our_rect_lo.getRectId() << ": " << abs(ourLeftoverPixels - profLeftoverPixels);
 
 					for (auto& our_rect_fi : our_rects_FI)
 					{
@@ -542,14 +543,14 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 				//There's no match, no food item founded in our image 
 				//(BAD NEWS if wrong detection / GOOD NEWS if leftover has no food left)
 				output += "0  ";
-				//std::cout << "\n" << "NIENTE MATCH PER CIBO: " << gT_rect_lo.getRectId() << " in " << gT_leftover_BBs << "(ORIGINAL IMAGE IS "
+				//std::cout << "\n" << "NO MATCH FOR FOOD: " << gT_rect_lo.getRectId() << " in " << gT_leftover_BBs << "(ORIGINAL IMAGE IS "
 					//<< ourBBs_leftover << ")";
 			}
 
 		}
 
 		output += "}";
-		std::cout << output << "\n\n";
+		std::cout << output << "\n";
 	}
 
 	gtf += numberFoodItemsSingleImage;
