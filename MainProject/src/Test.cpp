@@ -33,7 +33,7 @@ int findTrayNumber(const std::string& str)
 	std::istringstream iss(str);
 	std::string token;
 
-	int trayNumber = -1;  // Valore di default se il token non viene trovato
+	int trayNumber = -1;  // Default value. Returned if nothing found
 
 	while (iss >> token) {
 		size_t found = token.find("tray");
@@ -43,7 +43,7 @@ int findTrayNumber(const std::string& str)
 				trayNumber = std::stoi(trayNumStr);
 			}
 			catch (const std::exception& e) {
-				std::cout << "Errore: Impossibile convertire il numero di tray." << std::endl;
+				std::cout << "Error: Impossible to convert tray number just found." << std::endl;
 			}
 			break;
 		}
@@ -64,7 +64,7 @@ int findLeftoverNumber(const std::string& str)
 	std::istringstream iss(str);
 	std::string token;
 
-	int leftNumber = -1;  // Valore di default se il token non viene trovato
+	int leftNumber = -1;  // Default value. Returned if nothing found
 
 	while (iss >> token) {
 		size_t found = token.find("/leftover");
@@ -74,7 +74,7 @@ int findLeftoverNumber(const std::string& str)
 				leftNumber = std::stoi(trayNumStr);
 			}
 			catch (const std::exception& e) {
-				std::cout << "Errore: Impossibile convertire il numero di tray." << std::endl;
+				std::cout << "Error: Impossible to convert leftover number just found." << std::endl;
 			}
 			break;
 		}
@@ -103,31 +103,40 @@ void Test::test_the_system(const std::string& dataSetPath)
 
 	//Each food segmented by us will be in this vector of Prediction. Look its definition
 	std::vector<Prediction> predictions;
+
 	//Each of 15 class we could predict from label 0 to label 14
 	std::set<int> predictedClasses;
+
 	//Mean intersection over union metric
 	double mIoU = 0;
+
 	//Number of each food found on professor's dataset
 	int groundTruthFoods = 0;
+
 	//Number of images on professor's dataset
 	int numImagesDataset = 0;
 
-	//FOR MAP
+	//Pairs (classID,#occurencies) in dataset
 	std::vector<std::pair<int, int>> gTfoodItem_numbers;
 
-
+	//All the matches found so far
 	std::vector<double> mAPs;
 
 
 	//We will examinate trayVector by multiples of 3
 	for (int i = 0; i < trayVector.size(); i += 3)
 	{
+
+		std::vector<Prediction> predictionsOneTray;
+		std::set<int> predictedClassesOneTray;
+		std::vector<std::pair<int, int>> gTfoodItem_numbersOneTray;
+
+
 		//Indentifying Tray Number: elaborating it
 		Tray t_lo1 = trayVector.at(i);
 		int TrayNumber = findTrayNumber(t_lo1.getTrayAfterPath());
 
-		std::cout << "\n\n\nConsidering Tray: " << TrayNumber << "\n";
-		std::cout << "FoodImage (Tray" << TrayNumber << ")\n\n";
+		std::cout << "\n\nFoodImage (Tray" << TrayNumber << ")\n";
 
 		std::string outputPath = "../output";
 
@@ -139,17 +148,15 @@ void Test::test_the_system(const std::string& dataSetPath)
 		std::string ourBBs_FI = outputPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/food_image_bounding_box.txt";
 		std::string gT_BBs_FI = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/food_image_bounding_box.txt";
 
-		std::pair<double, int> result_of_single_IoU = OneImageSegmentation_MetricCalculations_(0, masks_FI, gT_BBs_FI, ourMasks_FI, ourBBs_FI, predictions,
-			predictedClasses, gTfoodItem_numbers,numImagesDataset, cv::Mat(), "", cv::Mat(), "");
+		std::pair<double, int> result_of_single_IoU = OneImageSegmentation_MetricCalculations_(0, masks_FI, gT_BBs_FI, ourMasks_FI, ourBBs_FI, predictionsOneTray,
+			predictedClassesOneTray, gTfoodItem_numbersOneTray,numImagesDataset, cv::Mat(), "", cv::Mat(), "");
 		
 
 		//Updating mIoU every time
-
 		double temp = mIoU * groundTruthFoods + result_of_single_IoU.first;
 		groundTruthFoods += result_of_single_IoU.second;
 		mIoU = temp / groundTruthFoods;
-		
-		std::cout << "FoodImage (Tray " << TrayNumber << ") DONE\n\n\n";
+	
 
 		/*
 		    Now, leftover's examination
@@ -164,11 +171,16 @@ void Test::test_the_system(const std::string& dataSetPath)
 				break;
 			}
 
+			std::vector<Prediction> predictionsOneTrayLeftover;
+			std::set<int> predictedClassesOneTrayLeftover;
+			std::vector<std::pair<int, int>> gTfoodItem_numbersOneTrayLeftover;
+
+
 
 			//Leftover masks and bbs
 			Tray t_loj = trayVector.at(j);
 
-			std::cout << "Leftover: " << j-i+1 << "(Tray " << TrayNumber << ")\n\n";
+			std::cout << "\n\nLeftover: " << j-i+1 << "(Tray " << TrayNumber << ")\n";
 
 			cv::Mat ourMasks_LO = cv::imread(outputPath + "/tray" + std::to_string(TrayNumber) + "/masks/leftover" + std::to_string(j%3 + 1) + ".png", cv::IMREAD_GRAYSCALE);
 			std::string ourBBs_LO = outputPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/leftover" + std::to_string(j%3 + 1) + "_bounding_box.txt";
@@ -177,8 +189,8 @@ void Test::test_the_system(const std::string& dataSetPath)
 			cv::Mat masks_LO = cv::imread(dataSetPath + "/tray" + std::to_string(TrayNumber) + "/masks/leftover" + std::to_string(j%3+1) + ".png", cv::IMREAD_GRAYSCALE);
 			std::string gT_BBs_LO = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/leftover" + std::to_string(j%3+1) + "_bounding_box.txt";
 
-			std::pair<double, int> result_of_single_IoU = OneImageSegmentation_MetricCalculations_(j - i + 1, masks_FI, gT_BBs_FI, ourMasks_FI, ourBBs_FI, predictions, 
-				predictedClasses, gTfoodItem_numbers, numImagesDataset, masks_LO, gT_BBs_LO, ourMasks_LO, ourBBs_LO);
+			std::pair<double, int> result_of_single_IoU = OneImageSegmentation_MetricCalculations_(j - i + 1, masks_FI, gT_BBs_FI, ourMasks_FI, ourBBs_FI, predictionsOneTrayLeftover,
+				predictedClassesOneTrayLeftover, gTfoodItem_numbersOneTrayLeftover, numImagesDataset, masks_LO, gT_BBs_LO, ourMasks_LO, ourBBs_LO);
 				
 			//Updating mIoU every time
 
@@ -186,10 +198,79 @@ void Test::test_the_system(const std::string& dataSetPath)
 			groundTruthFoods += result_of_single_IoU.second;
 			mIoU = temp / groundTruthFoods;
 
-			std::cout << "Leftover: " << j - i + 1 << "(Tray " << TrayNumber << ") DONE\n\n\n";
+
+			for (const auto& pot : predictionsOneTray)
+				predictionsOneTrayLeftover.push_back(pot);
+
+			for (const auto& pcot : predictedClassesOneTray)
+				predictedClassesOneTrayLeftover.insert(pcot);
+
+			for (const auto & not : gTfoodItem_numbersOneTray)
+			{
+				bool setted = false;
+				for (auto& notl : gTfoodItem_numbersOneTrayLeftover)
+					if (not.first == notl.first)
+					{
+						notl.second = notl.second + not.second;
+						setted = true;
+					}
+				if (!setted)
+					gTfoodItem_numbersOneTrayLeftover.push_back(std::make_pair(not.first, not.second));
+			}
+
+
+			//Computing tray mAP
+			double sumAPTrayLeftover = 0.0;
+			for (const auto& pc_otl : predictedClassesOneTrayLeftover)
+			{
+				int gtNumItemClass_pcl = -1;
+				for (const auto& nums_otl : gTfoodItem_numbersOneTrayLeftover)
+				{
+					if (nums_otl.first == pc_otl)
+					{
+						gtNumItemClass_pcl = nums_otl.second;
+						break;
+					}
+				}
+
+				sumAPTrayLeftover += calculateAP(predictionsOneTrayLeftover, pc_otl, gtNumItemClass_pcl);
+			}
+			double mAPOTL = sumAPTrayLeftover / predictedClassesOneTrayLeftover.size();
+
+			std::cout << "Tray mAP = " << mAPOTL << "\n";
+			std::cout << "\n\n";
+
+			for (const auto& potl : predictionsOneTrayLeftover)
+				predictions.push_back(potl);
+
+			for (const auto& pcotl : predictedClassesOneTrayLeftover)
+				predictedClasses.insert(pcotl);
+
+			for (const auto & notl : gTfoodItem_numbersOneTrayLeftover)
+			{
+				bool setted = false;
+				for (auto& n : gTfoodItem_numbers)
+					if (notl.first == n.first)
+					{
+						n.second = n.second + notl.second;
+						setted = true;
+					}
+				if (!setted)
+					gTfoodItem_numbers.push_back(std::make_pair(notl.first, notl.second));
+			}
+
+			predictionsOneTrayLeftover.clear();
+			predictedClassesOneTrayLeftover.clear();
+			gTfoodItem_numbersOneTrayLeftover.clear();
+
 		}
+
+		predictionsOneTray.clear();
+		predictedClassesOneTray.clear();
+		gTfoodItem_numbersOneTray.clear();
 	}
 
+	//Computing overall mAP
 	double sumAP = 0.0;
 	for (const auto& pc : predictedClasses)
 	{
@@ -206,9 +287,9 @@ void Test::test_the_system(const std::string& dataSetPath)
 	}
 	double mAP = sumAP / predictedClasses.size();
 
-	std::cout << "mAP = " << mAP << "\n";
-	std::cout << "mIoU = " << mIoU << "\n";
-	std::cout << "---ENDING TEST---";
+	std::cout << "overall mAP = " << mAP << "\n";
+	std::cout << "overall mIoU = " << mIoU << "\n";
+	std::cout << "\n---ENDING TEST---";
 }
 
 /**
@@ -229,30 +310,38 @@ void Test::test_the_system_randomly(const std::string& dataSetPath)
 
 	//Each food segmented by us will be in this vector of Prediction. Look its definition
 	std::vector<Prediction> predictions;
+
 	//Each of 15 class we could predict from label 0 to label 14
 	std::set<int> predictedClasses;
+
 	//Mean intersection over union metric
 	double mIoU = 0;
+
 	//Number of each food found on professor's dataset
 	int groundTruthFoods = 0;
+
 	//Number of images on professor's dataset
 	int numImagesDataset = 0;
 
-	//PAIRS FOR MAP
+	//Pairs (classID,#occurencies) in dataset
 	std::vector<std::pair<int, int>> gTfoodItem_numbers;
 
+	//All the matches found so far
 	std::vector<double> mAPs;
 
-	//We will examinate trayVector by multiples of 3
 	for (int i = 0; i < trayVector.size(); i++)
 	{
+		std::vector<Prediction> predictionsOneTray;
+		std::set<int> predictedClassesOneTray;
+		std::vector<std::pair<int, int>> gTfoodItem_numbersOneTray;
+
+
 		//Indentifying Tray Number: elaborating it
 		Tray t_lo = trayVector.at(i);
 		int TrayNumber = findTrayNumber(t_lo.getTrayAfterPath());
 		int leftoverNumber = findLeftoverNumber(t_lo.getTrayAfterPath());
 
-		std::cout << "\n\n\nConsidering Tray: " << TrayNumber << "\n";
-		std::cout << "FoodImage (Tray" << TrayNumber << ")\n\n";
+		std::cout << "\n\nFoodImage (Tray" << TrayNumber << ")\n";
 
 		std::string outputPath = "../output";
 
@@ -265,8 +354,8 @@ void Test::test_the_system_randomly(const std::string& dataSetPath)
 		std::string gT_BBs_FI = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/food_image_bounding_box.txt";
 
 
-		std::pair<double, int> result_of_single_IoU_FI = OneImageSegmentation_MetricCalculations_(0, masks_FI, gT_BBs_FI, ourMasks_FI, ourBBs_FI, predictions,
-			predictedClasses, gTfoodItem_numbers,numImagesDataset, cv::Mat(), "", cv::Mat(), "");
+		std::pair<double, int> result_of_single_IoU_FI = OneImageSegmentation_MetricCalculations_(0, masks_FI, gT_BBs_FI, ourMasks_FI, ourBBs_FI, predictionsOneTray,
+			predictedClassesOneTray, gTfoodItem_numbersOneTray,numImagesDataset, cv::Mat(), "", cv::Mat(), "");
 
 		//Updating mIoU every time
 
@@ -274,9 +363,8 @@ void Test::test_the_system_randomly(const std::string& dataSetPath)
 		groundTruthFoods += result_of_single_IoU_FI.second;
 		mIoU = temp / groundTruthFoods;
 
-		std::cout << "FoodImage (Tray " << TrayNumber << ") DONE\n\n\n";
 
-		std::cout << "Leftover: " << leftoverNumber << "(Tray " << TrayNumber << ")\n\n";
+		std::cout << "\n\nLeftover: " << leftoverNumber << "(Tray " << TrayNumber << ")\n";
 
 		cv::Mat ourMasks_LO = cv::imread(outputPath + "/tray" + std::to_string(TrayNumber) + "/masks/leftover" + std::to_string(leftoverNumber) + ".png", cv::IMREAD_GRAYSCALE);
 		std::string ourBBs_LO = outputPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/leftover" + std::to_string(leftoverNumber) + "_bounding_box.txt";
@@ -285,8 +373,8 @@ void Test::test_the_system_randomly(const std::string& dataSetPath)
 		cv::Mat masks_LO = cv::imread(dataSetPath + "/tray" + std::to_string(TrayNumber) + "/masks/leftover" + std::to_string(leftoverNumber) + ".png", cv::IMREAD_GRAYSCALE);
 		std::string gT_BBs_LO = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/leftover" + std::to_string(leftoverNumber) + "_bounding_box.txt";
 
-		std::pair<double, int> result_of_single_IoU_LO = OneImageSegmentation_MetricCalculations_(leftoverNumber, masks_FI, gT_BBs_FI, ourMasks_FI, ourBBs_FI, predictions,
-			predictedClasses, gTfoodItem_numbers, numImagesDataset, masks_LO, gT_BBs_LO, ourMasks_LO, ourBBs_LO);
+		std::pair<double, int> result_of_single_IoU_LO = OneImageSegmentation_MetricCalculations_(leftoverNumber, masks_FI, gT_BBs_FI, ourMasks_FI, ourBBs_FI, predictionsOneTray,
+			predictedClassesOneTray, gTfoodItem_numbersOneTray, numImagesDataset, masks_LO, gT_BBs_LO, ourMasks_LO, ourBBs_LO);
 
 		//Updating mIoU every time
 
@@ -294,9 +382,57 @@ void Test::test_the_system_randomly(const std::string& dataSetPath)
 		groundTruthFoods += result_of_single_IoU_LO.second;
 		mIoU = temp / groundTruthFoods;
 
-		std::cout << "Leftover: " << leftoverNumber << "(Tray " << TrayNumber << ") DONE\n\n\n";
+
+
+
+		//Computing tray mAP
+		double sumAPTray = 0.0;
+		for (const auto& pc_ot : predictedClassesOneTray)
+		{
+			int gtNumItemClass_pc = -1;
+			for (const auto& nums_ot : gTfoodItem_numbersOneTray)
+			{
+				if (nums_ot.first == pc_ot)
+				{
+					gtNumItemClass_pc = nums_ot.second;
+					break;
+				}
+			}
+
+			sumAPTray += calculateAP(predictionsOneTray, pc_ot, gtNumItemClass_pc);
+		}
+		double mAPOT = sumAPTray / predictedClassesOneTray.size();
+
+		for (const auto& pot : predictionsOneTray)
+			predictions.push_back(pot);
+
+		for (const auto& pcot : predictedClassesOneTray)
+			predictedClasses.insert(pcot);
+
+		for (const auto & not : gTfoodItem_numbersOneTray)
+		{	
+			bool setted = false;
+			for (auto& n : gTfoodItem_numbers)
+				if (not.first == n.first)
+				{
+					n.second = n.second + not.second;
+					setted = true;
+				}
+			if (!setted)
+				gTfoodItem_numbers.push_back(std::make_pair(not.first, not.second));
+		}
+
+
+		predictionsOneTray.clear();
+		predictedClassesOneTray.clear();
+		gTfoodItem_numbersOneTray.clear();
+
+
+		std::cout << "Tray mAP = " << mAPOT << "\n";
+		std::cout << "\n\n";
 	}
 
+	//Computing overall mAP
 	double sumAP = 0.0;
 	for (const auto& pc : predictedClasses)
 	{
@@ -314,7 +450,7 @@ void Test::test_the_system_randomly(const std::string& dataSetPath)
 	}
 	double mAP = sumAP / predictedClasses.size();
 
-	std::cout << "mAP = " << mAP << "\n";
-	std::cout << "mIoU = " << mIoU << "\n";
-	std::cout << "---ENDING TEST---";
+	std::cout << "overall mAP = " << mAP << "\n";
+	std::cout << "overall mIoU = " << mIoU << "\n";
+	std::cout << "\n---ENDING TEST---";
 }

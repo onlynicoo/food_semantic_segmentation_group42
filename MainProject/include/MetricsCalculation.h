@@ -31,11 +31,10 @@ class Prediction {
 	It takes into account the
 	"ID: id; [x, y, width, heigth]" format
 
-	Prof means that the BB was taken from
-	"The best prof" dataset
+	GT means ground truth, where the BB was taken from
 
 */
-class RectangleFileProf
+class RectangleFileGT
 {
 	private:
 		int rectID;
@@ -47,7 +46,7 @@ class RectangleFileProf
 		int getRectId() const { return rectID; }
 		std::vector<int> getCoords() const { return coordinates; }
 
-		RectangleFileProf(int id, const std::vector<int>& coords)
+		RectangleFileGT(int id, const std::vector<int>& coords)
 			: rectID(id), coordinates(coords) {}
 };
 
@@ -96,7 +95,7 @@ class RectangleFileOur
 /****************************************************************************************************************************/
 
 
-std::pair<std::vector<RectangleFileProf>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string, std::string);
+std::pair<std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string, std::string);
 
 double singlePlateFoodSegmentation_IoUMetric(const std::vector<int>&, const std::vector<int>&);
 
