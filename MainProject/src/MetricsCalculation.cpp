@@ -494,7 +494,7 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 					cv::Mat oneMask_OURLO(ourMasks_leftover.size(), CV_8UC1, cv::Scalar(255));
 
 					int ourLeftoverPixels = 0;
-					int profLeftoverPixels = 0; 
+					int gTLeftoverPixels = 0; 
 					// COMPARING OUR LEFTOVER MASKS WITH GROUND TRUTH'S ONES => R_i CALCULATIONS
 					for (int row = our_rect_lo.getCoords().at(1); row < our_rect_lo.getCoords().at(1) + our_rect_lo.getCoords().at(3); row++)
 					{
@@ -511,12 +511,12 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 							if (gT_leftover_masks.at<uchar>(row, col) == (uchar)gT_rect_lo.getRectId())
 							{
 								oneMask_GTLO.at<uchar>(row, col) = (uchar)gT_rect_lo.getRectId();
-								profLeftoverPixels++;
+								gTLeftoverPixels++;
 							}
 					}
 
 					std::cout << "\nLeftover's pixels. Food " << our_rect_lo.getRectId() << ": " << ourLeftoverPixels;
-					std::cout << "\nABS of difference. Food " << our_rect_lo.getRectId() << ": " << abs(ourLeftoverPixels - profLeftoverPixels);
+					std::cout << "\nABS of difference. Food " << our_rect_lo.getRectId() << ": " << abs(ourLeftoverPixels - gTLeftoverPixels);
 
 					for (auto& our_rect_fi : our_rects_FI)
 					{
