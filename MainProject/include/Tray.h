@@ -27,7 +27,7 @@ class Tray {
 
         cv::Mat SegmentBread(cv::Mat);
 
-    public:        
+    public:
 
         // Constructor that orchestrate the flow of segmentation and detection.
         Tray(const std::string&, const std::string&);
@@ -40,5 +40,7 @@ class Tray {
         
         // Show the trays before and after the meal, the detection bounding boxes and the segmentation masks
         void showTray();
+
+        void printFoodQuantities();
 
 };

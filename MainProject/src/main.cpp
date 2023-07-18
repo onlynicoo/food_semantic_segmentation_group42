@@ -15,6 +15,7 @@ int main(int argc, char** argv) {
                 std::string str2 = "../input/Food_leftover_dataset/tray" + std::to_string(tray) + "/leftover" + std::to_string(left) + ".jpg";
                 Tray my_tray = Tray(str1, str2);
                 trayVec.push_back(my_tray);
+                my_tray.printFoodQuantities();
                 my_tray.showTray();
                 std::cout << std::endl;
             }

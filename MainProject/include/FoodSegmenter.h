@@ -3,17 +3,18 @@
 
 class FoodSegmenter {
     private:
-        static constexpr int SMALL_WINDOW_SIZE = 50;
-        static constexpr int BIG_WINDOW_SIZE = 150;
+        static const int SMALL_WINDOW_SIZE = 50;
+        static const int BIG_WINDOW_SIZE = 150;
         static constexpr float PI = 3.141;
-        
-    public:
-        static const int SALAD_LABEL = 12;
-        static const int BREAD_LABEL = 13;
         static const std::vector<int> FIRST_PLATES_LABELS;
         static const std::vector<int> SECOND_PLATES_LABELS;
         static const std::vector<int> SIDE_DISHES_LABELS;
+        
+    public:
+        static const int NUM_LABELS = 14;
         static const std::string LABEL_NAMES[14];
+        static const int SALAD_LABEL = 12;
+        static const int BREAD_LABEL = 13;
 
         static void getFoodMaskFromPlate(const cv::Mat&, cv::Mat&, cv::Vec3f);
         static void getFoodMaskFromPlates(const cv::Mat&, cv::Mat&, std::vector<cv::Vec3f> , std::vector<int>&);

@@ -59,7 +59,7 @@ void writeBoundingBoxFile(const cv::Mat& mask, std::string filePath) {
     std::ofstream file(filePath, std::ios::trunc); // Open the file in append mode
 
     // For each possible label, extract the mask, compute the bounding box and write it in the file
-    for (int i = 1; i < 14; i++) {
+    for (int i = 1; i < FoodSegmenter::NUM_LABELS; i++) {
         cv::Mat binaryMask = (mask == i);
         if (cv::countNonZero(binaryMask) == 0)
             continue;
@@ -377,4 +377,20 @@ void Tray::showTray() {
     imshow(window_name, imageGrid);
 
     cv::waitKey(0);
+}
+
+/**
+ * The function "printFoodQuantities" prints the quantities of food before and after segmentation.
+ */
+void Tray::printFoodQuantities() {
+    std::cout << "\nFood quantities: " << std::endl;
+    for (int i = 1; i < FoodSegmenter::NUM_LABELS; i++) {
+        int amountBefore = cv::countNonZero((trayBeforeSegmentationMask == i));
+        int amountAfter = cv::countNonZero((trayAfterSegmentationMask == i));
+
+        if (amountBefore != 0)
+            std::cout << FoodSegmenter::LABEL_NAMES[i]
+                << ": Before amount = " << amountBefore << "; After amount = " << amountAfter
+                << "; Leftover amount = " << amountBefore - amountAfter << ";" << std::endl;
+    }
 }
