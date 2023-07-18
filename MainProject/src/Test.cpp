@@ -205,21 +205,21 @@ void Test::test_the_system(const std::string& dataSetPath)
 			for (const auto& pcot : predictedClassesOneTray)
 				predictedClassesOneTrayLeftover.insert(pcot);
 
-			for (int not_= 0; not_ < gTfoodItem_numbersOneTray.size(); not_++)
+			for (int nOt__= 0; nOt__ < gTfoodItem_numbersOneTray.size(); nOt__++)
 			{
-				std::pair<int,int> not = gTfoodItem_numbersOneTray.at(not_);
+				std::pair<int,int> nOt_ = gTfoodItem_numbersOneTray.at(nOt__);
 				bool setted = false;
-				for (int notl_ = 0; notl_ < gTfoodItem_numbersOneTrayLeftover.size(); notl_++)
+				for (int nOtl_ = 0; nOtl_ < gTfoodItem_numbersOneTrayLeftover.size(); nOtl_++)
 				{
-					std::pair<int, int> notl = gTfoodItem_numbersOneTrayLeftover.at(notl_);
-					if (not.first == notl.first)
+					std::pair<int, int> nOtl = gTfoodItem_numbersOneTrayLeftover.at(nOtl_);
+					if (nOt_.first == nOtl.first)
 					{
-						notl.second = notl.second + not.second;
+						nOtl.second = nOtl.second + nOt_.second;
 						setted = true;
 					}
 				}
 				if (!setted)
-					gTfoodItem_numbersOneTrayLeftover.push_back(std::make_pair(not.first, not.second));
+					gTfoodItem_numbersOneTrayLeftover.push_back(std::make_pair(nOt_.first, nOt_.second));
 			}
 			
 			/*
@@ -264,17 +264,17 @@ void Test::test_the_system(const std::string& dataSetPath)
 			for (const auto& pcotl : predictedClassesOneTrayLeftover)
 				predictedClasses.insert(pcotl);
 
-			for (const auto & notl : gTfoodItem_numbersOneTrayLeftover)
+			for (const auto & nOtl : gTfoodItem_numbersOneTrayLeftover)
 			{
 				bool setted = false;
 				for (auto& n : gTfoodItem_numbers)
-					if (notl.first == n.first)
+					if (nOtl.first == n.first)
 					{
-						n.second = n.second + notl.second;
+						n.second = n.second + nOtl.second;
 						setted = true;
 					}
 				if (!setted)
-					gTfoodItem_numbers.push_back(std::make_pair(notl.first, notl.second));
+					gTfoodItem_numbers.push_back(std::make_pair(nOtl.first, nOtl.second));
 			}
 
 			predictionsOneTrayLeftover.clear();
@@ -426,21 +426,21 @@ void Test::test_the_system_randomly(const std::string& dataSetPath)
 			predictedClasses.insert(pcot);
 
 
-		for (int not_ = 0; not_ < gTfoodItem_numbersOneTray.size(); not_++)
+		for (int nOt_ = 0; nOt_ < gTfoodItem_numbersOneTray.size(); nOt_++)
 		{
-			std::pair<int,int> not = gTfoodItem_numbersOneTray.at(not_);
+			std::pair<int,int> nOt = gTfoodItem_numbersOneTray.at(nOt_);
 			bool setted = false;
 			for (int n_ = 0; n_ < gTfoodItem_numbers.size(); n_++)
 			{
 				std::pair<int, int> n = gTfoodItem_numbers.at(n_);
-				if (not.first == n.first)
+				if (nOt.first == n.first)
 				{
-					n.second = n.second + not.second;
+					n.second = n.second + nOt.second;
 					setted = true;
 				}
 			}		
 			if (!setted)
-				gTfoodItem_numbers.push_back(std::make_pair(not.first, not.second));
+				gTfoodItem_numbers.push_back(std::make_pair(nOt.first, nOt.second));
 		}
 
 		/*
