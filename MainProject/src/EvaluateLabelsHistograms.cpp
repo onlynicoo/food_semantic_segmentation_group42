@@ -60,5 +60,16 @@ int main(int argc, char** argv) {
         if (!imagesHistograms[i].empty())
             reduce(imagesHistograms[i], labelsHistograms.row(i), 0, cv::REDUCE_AVG);
 
+    int approxValue = 10;
+    for (int r = 0; r < labelsHistograms.rows; r++)
+        for (int c = 0; c < labelsHistograms.cols; c++) {
+            int curVal = int(labelsHistograms.at<uchar>(r,c));
+            if (curVal % approxValue < std::ceil(double(approxValue) / 2.0))
+                curVal -= curVal % approxValue;
+            else
+                curVal += approxValue - curVal % approxValue;
+            labelsHistograms.at<uchar>(r,c) = curVal;
+        }
+
     HistogramThresholder::writeLabelsHistogramsToFile(labelsHistograms);
 }
