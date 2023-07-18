@@ -10,13 +10,13 @@
 /**
  * Given two BB file paths, this function will open those files
  * and read each record. It save them into two specific structures:
- * std::vector<RectangleFileProf> for first input as prof's dataset BB_path
+ * std::vector<RectangleFileGT> for first input as Food Leftover Dataset's BB_path
  * std::vector<RectangleFileOur> for second input as our's BB_path
  * It will return them as a pair, to be studied in second moment.
  *
- * @param profBB_path path to ground truth bounding box .txt file
+ * @param gtBB_path path to ground truth bounding box .txt file
  * @param ourBB_path path to a bounding box .txt file computed by our system
- * @return a pair of vectors of specific types of rectangle. See RectangleFileProf and RectangleFileOur for more info
+ * @return a pair of vectors of specific types of rectangle. See RectangleFileGT and RectangleFileOur for more info
  */
 std::pair<std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string gtBB_path, std::string ourBB_path)
 {
@@ -106,7 +106,7 @@ std::pair<std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> boundingB
  * x and y for top left pixel corner coordinates
  * w and h respectively for width and height of the BB itself.
  * 
- * @param profBB ground truth bounding box coordinates record for a food item
+ * @param gtBB ground truth bounding box coordinates record for a food item
  * @param ourBB bounding box coordinates record for a food item, computed by our system
  * @return a double representing intersection over union for a single food item
  */
