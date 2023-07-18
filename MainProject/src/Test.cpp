@@ -224,13 +224,28 @@ void Test::test_the_system(const std::string& dataSetPath)
 			predictedClassesOneTray.insert(pclo);
 
 
-		for (int nLO_ = 0; nLO_ < gTfoodItem_numbersLeftover.size(); nLO_++)
+	/*	for (int nLO_ = 0; nLO_ < gTfoodItem_numbersLeftover.size(); nLO_++)
 		{
 			std::pair<int, int> nLO = gTfoodItem_numbersLeftover.at(nLO_);
 			bool setted = false;
 			for (int nOt_ = 0; nOt_ < gTfoodItem_numbersOneTray.size(); nOt_++)
 			{
 				std::pair<int, int> nOt = gTfoodItem_numbersOneTray.at(nOt_);
+				if (nLO.first == nOt.first)
+				{
+					nOt.second = nOt.second + nLO.second;
+					setted = true;
+				}
+			}
+			if (!setted)
+				gTfoodItem_numbersOneTray.push_back(std::make_pair(nLO.first, nLO.second));
+		}*/
+
+		for (const auto& nLO : gTfoodItem_numbersLeftover)
+		{
+			bool setted = false;
+			for (auto& nOt : gTfoodItem_numbersOneTray)
+			{
 				if (nLO.first == nOt.first)
 				{
 					nOt.second = nOt.second + nLO.second;
