@@ -394,7 +394,7 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 		}
 	}
 
-	else if (code == 1 || code == 2 )
+	else if (code == 1 || code == 2)
 	{
 		std::pair< std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> rectsForIoU = boundingBoxFileTokenizer(gT_leftover_BBs, ourBBs_leftover);
 		std::vector<RectangleFileGT> gT_rects_LO = rectsForIoU.first;

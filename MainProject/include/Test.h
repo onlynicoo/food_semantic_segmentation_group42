@@ -10,5 +10,4 @@ class Test {
 	public:
 		Test(std::vector<Tray>);
 		void test_the_system(const std::string&);
-		void test_the_system_randomly(const std::string&);
 };
