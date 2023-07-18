@@ -24,4 +24,5 @@ class FoodSegmenter {
         static void refineTomatoPasta(const cv::Mat&, cv::Mat&);
         static void refinePorkCutlet(const cv::Mat&, cv::Mat&);
         static void refineMask(const cv::Mat&, cv::Mat& , int);
+        static void refinePillowRice(const cv::Mat&, cv::Mat&);
 };
