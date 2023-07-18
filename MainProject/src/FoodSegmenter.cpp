@@ -500,7 +500,7 @@ void FoodSegmenter::getBreadMask(const cv::Mat& src, const cv::Mat& breadArea, c
             result_mask,       // segmentation resulting mask
             bbx,               // rectangle containing foreground
             bgModel, fgModel,  // models
-            10,                // number of iterations
+            3,                // number of iterations
             cv::GC_INIT_WITH_RECT);
 
     cv::Mat tmpMask0 = (result_mask == 0);
