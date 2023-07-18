@@ -625,6 +625,50 @@ void FoodSegmenter::refinePestoPasta(const cv::Mat& src, cv::Mat& mask) {
 }
 
 /**
+ * The function refines a given mask by applying various image processing techniques to segment and
+ * fill the contours of the food in the input image.
+ * 
+ * @param src The `src` parameter is the input image that contains the food segment. It is of type
+ * `cv::Mat`, which is a matrix data structure in OpenCV that represents an image.
+ * @param mask The "mask" parameter is a binary image that represents the regions of interest in the
+ * "src" image. It is used to segment the food objects in the image.
+ */
+void FoodSegmenter::refinePillowRice(const cv::Mat& src, cv::Mat& mask) {
+    cv::Mat workingFood;
+    cv::bitwise_and(src, src, workingFood, mask);
+    // Split the image into individual BGR channels
+    cv::Mat hsvImage, hslImage;
+    cv::cvtColor(workingFood, hsvImage, cv::COLOR_BGR2HSV);
+    std::vector<cv::Mat> channels;
+    cv::split(hsvImage, channels);
+
+    cv::Mat thresholdedMaskHSV = channels[1] > 0.35*255 ;
+    cv::Mat sThresholded;
+    cv::bitwise_and(workingFood, workingFood, sThresholded, thresholdedMaskHSV);
+
+    // Find contours in the binary mask
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(thresholdedMaskHSV, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    // Create a new image to hold the filled shapes
+    cv::Mat filledMask = cv::Mat::zeros(thresholdedMaskHSV.size(), CV_8UC1);
+
+    double largestAreaPost = 0;
+    int index = -1;
+    // Fill the contours of the shapes in the filled mask
+    for (int i = 0; i < contours.size(); i++) {
+        double area = cv::contourArea(contours[i]);
+        if (area > largestAreaPost) {
+            largestAreaPost = area;
+            index = i;
+        }
+    }
+
+    if (index != -1)
+        cv::fillPoly(filledMask, contours[index], cv::Scalar(1));
+    mask = filledMask;
+}
+
+/**
  * The function `refineTomatoPasta` refines a given mask by performing various image processing
  * operations to isolate the tomato pasta in the source image.
  * 
@@ -690,6 +734,7 @@ void FoodSegmenter::refineTomatoPasta(const cv::Mat& src, cv::Mat& mask) {
     mask = filledMask;
 }
 
+
 /**
  * The function refines a mask of a pork cutlet by closing holes, finding contours, sorting them by
  * area, and keeping the top n contours.
@@ -725,9 +770,9 @@ void FoodSegmenter::refineMask(const cv::Mat& src, cv::Mat& mask, int label) {
         case 1:
             refinePestoPasta(src, mask);
             break;
-        /*case 2:
-            refineTomatoPasta(src, mask);
-            break;*/
+        case 5:
+            refinePillowRice(src, mask);
+            break;
         case 6:
             refinePorkCutlet(src, mask);
             break;
