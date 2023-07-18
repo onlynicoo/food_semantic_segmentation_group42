@@ -97,11 +97,11 @@ class RectangleFileOur
 
 std::pair<std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string, std::string);
 
-double singlePlateFoodSegmentation_IoUMetric(const std::vector<int>&, const std::vector<int>&);
+double singlePlateFoodSegmentationIoUMetric(const std::vector<int>&, const std::vector<int>&);
 
 double singlePlateLeftoverEstimationMetric(const cv::Mat&, const cv::Mat&);
 
-std::pair<double, int> OneImageSegmentation_MetricCalculations_(
+std::pair<double, int> OneImageSegmentationMetricCalculations(
 	int,
 
 	const cv::Mat&,

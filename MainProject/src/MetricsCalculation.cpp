@@ -110,7 +110,7 @@ std::pair<std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> boundingB
  * @param ourBB bounding box coordinates record for a food item, computed by our system
  * @return a double representing intersection over union for a single food item
  */
-double singlePlateFoodSegmentation_IoUMetric(const std::vector<int>& gtBB, const std::vector<int>& ourBB)
+double singlePlateFoodSegmentationIoUMetric(const std::vector<int>& gtBB, const std::vector<int>& ourBB)
 {
 	// Compute intersection rectangle top left corner
 	int x1 = std::max(gtBB[0], ourBB[0]);
@@ -305,7 +305,7 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
  * @param ourBBs_leftover path to ourMasks_leftover bounding boxes .txt file
  * @return a pair: (sum of all food items' IoU's found in an image, # of food item encountered) => e.g : (2.89477383,4)
  */
-std::pair<double, int> OneImageSegmentation_MetricCalculations_(
+std::pair<double, int> OneImageSegmentationMetricCalculations(
 	int code,
 
 	const cv::Mat& gT_FI_masks,
@@ -365,7 +365,7 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 					foundMatch = true;
 					our_rect_fi.setIsTaken(true);
 
-					double single_iou = singlePlateFoodSegmentation_IoUMetric(gT_rect_fi.getCoords(), our_rect_fi.getCoords());
+					double single_iou = singlePlateFoodSegmentationIoUMetric(gT_rect_fi.getCoords(), our_rect_fi.getCoords());
 					our_rect_fi.setPrediction(single_iou);
 					sum_iou += single_iou;
 
@@ -434,7 +434,7 @@ std::pair<double, int> OneImageSegmentation_MetricCalculations_(
 					our_rect_lo.setIsTaken(true);
 
 					//We evaluate also for 3) because we need the confidence score
-					double single_iou = singlePlateFoodSegmentation_IoUMetric(gT_rect_lo.getCoords(), our_rect_lo.getCoords());
+					double single_iou = singlePlateFoodSegmentationIoUMetric(gT_rect_lo.getCoords(), our_rect_lo.getCoords());
 					our_rect_lo.setPrediction(single_iou);
 
 					std::cout << "\nFood " << our_rect_lo.getRectId() << ", IoU = " << single_iou;
