@@ -217,29 +217,13 @@ void Test::test_the_system(const std::string& dataSetPath)
 			std::cout << "Leftover mAP = " << mAPLO << "\n\n";
 		}
 
+
 		for (const auto& polo : predictionsLeftover)
 			predictionsOneTray.push_back(polo);
 
 		for (const auto& pclo : predictedClassesLeftover)
 			predictedClassesOneTray.insert(pclo);
 
-
-	/*	for (int nLO_ = 0; nLO_ < gTfoodItem_numbersLeftover.size(); nLO_++)
-		{
-			std::pair<int, int> nLO = gTfoodItem_numbersLeftover.at(nLO_);
-			bool setted = false;
-			for (int nOt_ = 0; nOt_ < gTfoodItem_numbersOneTray.size(); nOt_++)
-			{
-				std::pair<int, int> nOt = gTfoodItem_numbersOneTray.at(nOt_);
-				if (nLO.first == nOt.first)
-				{
-					nOt.second = nOt.second + nLO.second;
-					setted = true;
-				}
-			}
-			if (!setted)
-				gTfoodItem_numbersOneTray.push_back(std::make_pair(nLO.first, nLO.second));
-		}*/
 
 		for (const auto& nLO : gTfoodItem_numbersLeftover)
 		{
@@ -282,6 +266,7 @@ void Test::test_the_system(const std::string& dataSetPath)
 			predictions.push_back(pot);
 		for (const auto& pcot : predictedClassesOneTray)
 			predictedClasses.insert(pcot);
+		/*
 		for (int nOt_ = 0; nOt_ < gTfoodItem_numbersOneTray.size(); nOt_++)
 		{
 			std::pair<int,int> nOt = gTfoodItem_numbersOneTray.at(nOt_);
@@ -298,6 +283,24 @@ void Test::test_the_system(const std::string& dataSetPath)
 			if (!setted)
 				gTfoodItem_numbers.push_back(std::make_pair(nOt.first, nOt.second));
 		}
+		*/
+
+		for (const auto& nOt : gTfoodItem_numbersOneTray)
+		{
+			bool setted = false;
+			for (auto& n : gTfoodItem_numbers)
+			{
+				if (nOt.first == n.first)
+				{
+					n.second = n.second + nOt.second;
+					setted = true;
+				}
+
+			}
+			if (!setted)
+				gTfoodItem_numbers.push_back(std::make_pair(nOt.first, nOt.second));
+		}
+
 
 		predictionsOneTray.clear();
 		predictedClassesOneTray.clear();
@@ -322,6 +325,7 @@ void Test::test_the_system(const std::string& dataSetPath)
 				break;
 			}
 		}
+
 
 		sumAP += calculateAP(predictions, pc, gtNumItemClass_pc);
 	}
