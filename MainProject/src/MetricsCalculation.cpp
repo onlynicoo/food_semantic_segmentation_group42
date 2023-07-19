@@ -477,6 +477,94 @@ std::pair<double, int> OneImageSegmentationMetricCalculations(
 
 		for (const auto& gT_rect_lo : gT_rects_LO)
 		{
+
+			double gTR_I = 0;
+			double ourR_I = 0;
+
+			for (const auto& gT_rects_fi : gT_rects_FI)
+			{
+				if (gT_rect_lo.getRectId() == gT_rects_fi.getRectId())
+				{
+					cv::Mat oneMask_GTLO(gT_leftover_masks.size(), CV_8UC1, cv::Scalar(255));
+					cv::Mat oneMask_GTFI(gT_FI_masks.size(), CV_8UC1, cv::Scalar(255));
+
+					//TAKING GROUND TRUTH LEFTOVER MASK
+					for (int row = gT_rect_lo.getCoords().at(1); row < gT_rect_lo.getCoords().at(1) + gT_rect_lo.getCoords().at(3); row++)
+					{
+						for (int col = gT_rect_lo.getCoords().at(0); col < gT_rect_lo.getCoords().at(0) + gT_rect_lo.getCoords().at(2); col++)
+							if (gT_leftover_masks.at<uchar>(row, col) == (uchar)gT_rect_lo.getRectId())
+							{
+								oneMask_GTLO.at<uchar>(row, col) = (uchar)gT_rect_lo.getRectId();
+							}
+					}
+					
+					//TAKING GROUND TRUTH LEFTOVER MASK
+					for (int row = gT_rects_fi.getCoords().at(1); row < gT_rects_fi.getCoords().at(1) + gT_rects_fi.getCoords().at(3); row++)
+					{
+						for (int col = gT_rects_fi.getCoords().at(0); col < gT_rects_fi.getCoords().at(0) + gT_rects_fi.getCoords().at(2); col++)
+							if (gT_FI_masks.at<uchar>(row, col) == (uchar)gT_rects_fi.getRectId())
+							{
+								oneMask_GTFI.at<uchar>(row, col) = (uchar)gT_rects_fi.getRectId();
+							}
+					}
+
+					/*cv::imshow("gtfi", oneMask_GTFI);
+					cv::imshow("gtlo", oneMask_GTLO);
+					cv::waitKey(0);*/
+
+					//COMPARING THEM. gtR_I CALCULATION
+					gTR_I = singlePlateLeftoverEstimationMetric(oneMask_GTFI, oneMask_GTLO);
+				}
+			}
+
+			for (auto& our_rect_lo : our_rects_LO)
+			{
+				if (gT_rect_lo.getRectId() == our_rect_lo.getRectId())
+				{
+					for (auto& our_rect_fi : our_rects_FI)
+					{
+						if (our_rect_fi.getRectId() == our_rect_lo.getRectId())
+						{
+							cv::Mat oneMask_OURLO(ourMasks_leftover.size(), CV_8UC1, cv::Scalar(255));
+							cv::Mat oneMask_OURFI(ourMasks_FI.size(), CV_8UC1, cv::Scalar(255));
+
+
+							for (int row = our_rect_lo.getCoords().at(1); row < our_rect_lo.getCoords().at(1) + our_rect_lo.getCoords().at(3); row++)
+							{
+								for (int col = our_rect_lo.getCoords().at(0); col < our_rect_lo.getCoords().at(0) + our_rect_lo.getCoords().at(2); col++)
+									if (ourMasks_leftover.at<uchar>(row, col) == (uchar)our_rect_lo.getRectId())
+									{
+										oneMask_OURLO.at<uchar>(row, col) = (uchar)our_rect_lo.getRectId();
+									}
+							}
+							for (int row = our_rect_fi.getCoords().at(1); row < our_rect_fi.getCoords().at(1) + our_rect_fi.getCoords().at(3); row++)
+							{
+								for (int col = our_rect_fi.getCoords().at(0); col < our_rect_fi.getCoords().at(0) + our_rect_fi.getCoords().at(2); col++)
+									if (ourMasks_FI.at<uchar>(row, col) == (uchar)our_rect_fi.getRectId())
+									{
+										oneMask_OURFI.at<uchar>(row, col) = (uchar)our_rect_fi.getRectId();
+									}
+							}
+
+							/*cv::imshow("ourfi", oneMask_OURFI);
+							cv::imshow("ourlo", oneMask_OURLO);
+							cv::waitKey(0);*/
+
+
+							ourR_I = singlePlateLeftoverEstimationMetric(oneMask_OURFI, oneMask_OURLO);
+							std::cout << "\n\nFood item " << gT_rect_lo.getRectId() << " : " << "our R_i = " << ourR_I << "\n";
+							std::cout << "Food item " << gT_rect_lo.getRectId() << " : " << "gT R_i = " << gTR_I << "\n";
+							std::cout << "Food item " << gT_rect_lo.getRectId() << " : " << "abs diff = " << abs(ourR_I-gTR_I)<<"\n";
+							break;
+						}
+					}
+				}
+
+			}
+		}
+
+		/*for (const auto& gT_rect_lo : gT_rects_LO)
+		{
 			bool foundMatch = false;
 
 			for (auto& our_rect_lo : our_rects_LO) 
@@ -550,7 +638,7 @@ std::pair<double, int> OneImageSegmentationMetricCalculations(
 		}
 
 		output += "}";
-		std::cout << output << "\n";
+		std::cout << output << "\n";*/
 	}
 
 	gtf += numberFoodItemsSingleImage;
