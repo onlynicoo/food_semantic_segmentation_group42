@@ -18,7 +18,7 @@ class HistogramThresholder {
             }
         };
 
-        static const int NUM_VALUES = 64;
+        static const int NUM_VALUES = 60;
         static const int DATA_TYPE = CV_8UC1;
         static const std::string LABELS_HISTOGRAMS_PATH;
         static const std::string LABELS_HISTOGRAMS_NAME;
