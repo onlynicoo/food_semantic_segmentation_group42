@@ -226,7 +226,6 @@ void FoodSegmenter::getFoodMaskFromPlates(const cv::Mat& src, cv::Mat& mask, std
                         segmentationMask.at<uchar>(r, c) = int(platesMasks[i].at<uchar>(r, c) * foodLabel);
 
             curLabels.push_back(foodLabel);
-            std::cout << "Found " << LABEL_NAMES[foodLabel] << std::endl;
 
         } else {
             // We have to split the mask into more foods
@@ -398,7 +397,6 @@ void FoodSegmenter::getFoodMaskFromPlates(const cv::Mat& src, cv::Mat& mask, std
                             segmentationMask.at<uchar>(r, c) = int(foodMasks[j].at<uchar>(r, c) * foodLabel);
 
                 curLabels.push_back(foodLabel);
-                std::cout << "Found " << LABEL_NAMES[foodLabel] << std::endl;
             }
         }
     }

@@ -73,6 +73,17 @@ void writeBoundingBoxFile(const cv::Mat& mask, std::string filePath) {
     file.close();
 }
 
+void printFoundFoods(cv::Mat segmentationMask, bool isBefore) {
+    if (isBefore)
+        std::cout << "food_image:\n";
+    else
+        std::cout << "leftover:\n";
+
+    for (int i = 1; i < FoodSegmenter::NUM_LABELS; i++)
+        if (cv::countNonZero((segmentationMask == i)) > 0)
+            std::cout << "\t" << FoodSegmenter::LABEL_NAMES[i] << std::endl;
+}
+
 /**
  * The function `segmentImage` takes an input image, segments different food items in the image, and
  * returns a gray scale mask representing the segmented regions.
@@ -89,10 +100,7 @@ void Tray::segmentImage(const cv::Mat& src, cv::Mat& dst, std::vector<int>& labe
 
     cv::Mat segmentationMask(src.size(), CV_8UC1, cv::Scalar(0));
 
-    if (labelsFound.empty())
-        std::cout << "food_image:" << std::endl;
-    else
-        std::cout << "\nleftover:" << std::endl;
+    bool isBefore = labelsFound.empty();
 
     // Segment food in plates
     cv::Mat plateFoodsMask;
@@ -111,7 +119,6 @@ void Tray::segmentImage(const cv::Mat& src, cv::Mat& dst, std::vector<int>& labe
 
         int saladLabel = FoodSegmenter::SALAD_LABEL;
         labelsFound.push_back(saladLabel);
-        std::cout << "Found " << FoodSegmenter::LABEL_NAMES[saladLabel] << std::endl;
     }
 
     // Segment bread
@@ -125,10 +132,28 @@ void Tray::segmentImage(const cv::Mat& src, cv::Mat& dst, std::vector<int>& labe
 
         int breadLabel = FoodSegmenter::BREAD_LABEL;
         labelsFound.push_back(breadLabel);
-        std::cout << "Found " << FoodSegmenter::LABEL_NAMES[breadLabel] << std::endl;
     }
 
+    printFoundFoods(segmentationMask, isBefore);
+
     dst = segmentationMask;
+}
+
+/**
+ * The function "printFoodQuantities" prints the quantities of food before and after segmentation.
+ */
+void Tray::printFoodQuantities() {
+    std::cout << "Food quantities: " << std::endl;
+    for (int i = 1; i < FoodSegmenter::NUM_LABELS; i++) {
+        int amountBefore = cv::countNonZero((trayBeforeSegmentationMask == i));
+        int amountAfter = cv::countNonZero((trayAfterSegmentationMask == i));
+
+        if (amountBefore != 0)
+            std::cout << FoodSegmenter::LABEL_NAMES[i] << std::endl
+                << "\tBefore amount = " << amountBefore << std::endl
+                << "\tAfter amount = " << amountAfter << std::endl
+                << "\tLeftover amount = " << amountBefore - amountAfter << std::endl;
+    }
 }
 
 /**
@@ -377,20 +402,4 @@ void Tray::showTray() {
     imshow(window_name, imageGrid);
 
     cv::waitKey(0);
-}
-
-/**
- * The function "printFoodQuantities" prints the quantities of food before and after segmentation.
- */
-void Tray::printFoodQuantities() {
-    std::cout << "\nFood quantities: " << std::endl;
-    for (int i = 1; i < FoodSegmenter::NUM_LABELS; i++) {
-        int amountBefore = cv::countNonZero((trayBeforeSegmentationMask == i));
-        int amountAfter = cv::countNonZero((trayAfterSegmentationMask == i));
-
-        if (amountBefore != 0)
-            std::cout << FoodSegmenter::LABEL_NAMES[i]
-                << ": Before amount = " << amountBefore << "; After amount = " << amountAfter
-                << "; Leftover amount = " << amountBefore - amountAfter << ";" << std::endl;
-    }
 }
