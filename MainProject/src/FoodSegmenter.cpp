@@ -633,7 +633,7 @@ void FoodSegmenter::refinePestoPasta(const cv::Mat& src, cv::Mat& mask) {
  * @param mask The "mask" parameter is a binary image that represents the regions of interest in the
  * "src" image. It is used to segment the food objects in the image.
  */
-void FoodSegmenter::refinePillowRice(const cv::Mat& src, cv::Mat& mask) {
+void FoodSegmenter::refinePilawRice(const cv::Mat& src, cv::Mat& mask) {
     cv::Mat workingFood;
     cv::bitwise_and(src, src, workingFood, mask);
     // Split the image into individual BGR channels
@@ -771,7 +771,7 @@ void FoodSegmenter::refineMask(const cv::Mat& src, cv::Mat& mask, int label) {
             refinePestoPasta(src, mask);
             break;
         case 5:
-            refinePillowRice(src, mask);
+            refinePilawRice(src, mask);
             break;
         case 6:
             refinePorkCutlet(src, mask);
