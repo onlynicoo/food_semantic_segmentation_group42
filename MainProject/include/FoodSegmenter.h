@@ -42,10 +42,18 @@ class FoodSegmenter {
         // it returns the bread mask
         static void getBreadMask(const cv::Mat&, const cv::Mat&, cv::Mat&);
 
-        // function for refining some food items
+        // function for refining Pasta al Pesto
         static void refinePestoPasta(const cv::Mat&, cv::Mat&);
+
+        // function for refining Tomato Pasta
         static void refineTomatoPasta(const cv::Mat&, cv::Mat&);
+
+        // function for refining Pork Cutlet
         static void refinePorkCutlet(const cv::Mat&, cv::Mat&);
-        static void refineMask(const cv::Mat&, cv::Mat& , int);
+
+        // function Pilaw Rice
         static void refinePilawRice(const cv::Mat&, cv::Mat&);
+
+        // entrypoint function that calls the correct refine function based on the label
+        static void refineMask(const cv::Mat&, cv::Mat& , int);
 };
