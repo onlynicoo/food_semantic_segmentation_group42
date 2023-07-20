@@ -26,9 +26,6 @@ class Tray {
         // Function to save the just computed segmentation mask
         void saveSegmentedMask(const std::string&, const cv::Mat&);
 
-        // Function to segment bread
-        cv::Mat SegmentBread(cv::Mat);
-
     public:
 
         // Constructor that orchestrate the flow of segmentation and detection.
