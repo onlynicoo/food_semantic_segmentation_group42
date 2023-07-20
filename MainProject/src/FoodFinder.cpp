@@ -161,7 +161,6 @@ void FoodFinder::findBread(const cv::Mat& src, cv::Mat& breadArea) {
 
     // Create a binary mask of pixels within the specified range
     cv::Mat mask;
-    // Put this in .h file
     int thresholdLow = 70;
     int thresholdHigh = 117;
     cv::inRange(yuvChannels[1], thresholdLow, thresholdHigh, mask);
@@ -205,7 +204,6 @@ void FoodFinder::findBread(const cv::Mat& src, cv::Mat& breadArea) {
     cv::Mat thresholdedLargestComponentMask;
     double maxValue = 255;
 
-    // put this in .h file
     int thresholdValueToChange = 111;
     cv::threshold(result, thresholdedLargestComponentMask, thresholdValueToChange, maxValue, cv::THRESH_BINARY);
 
@@ -230,7 +228,6 @@ void FoodFinder::findBread(const cv::Mat& src, cv::Mat& breadArea) {
     cv::Mat thresholdedCanny;
     double maxValueCanny = 255;
 
-    // put this in .h file
     int thresholdValueCanny = 115;
     cv::threshold(result, thresholdedCanny, thresholdValueCanny, maxValue, cv::THRESH_BINARY);
 
@@ -255,7 +252,6 @@ void FoodFinder::findBread(const cv::Mat& src, cv::Mat& breadArea) {
     cv::Mat res;
     cv::bitwise_and(src, src, res, closedImage);
 
-    // not bad but to improve
     //  Convert image to HSV color space
     cv::Mat hsvImage;
     cv::cvtColor(res, hsvImage, cv::COLOR_BGR2HSV);
@@ -272,7 +268,7 @@ void FoodFinder::findBread(const cv::Mat& src, cv::Mat& breadArea) {
     // Threshold the result image
     cv::Mat thresholdedSaturation;
     cv::Mat saturationMask;
-    // put this in .h file
+    
     int thresholdSaturation = 140;
     cv::threshold(saturationChannel, thresholdedSaturation, thresholdSaturation, 255, cv::THRESH_BINARY);
     cv::threshold(saturationChannel, saturationMask, 1, 255, cv::THRESH_BINARY);

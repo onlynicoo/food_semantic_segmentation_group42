@@ -552,8 +552,6 @@ void FoodSegmenter::refinePestoPasta(const cv::Mat& src, cv::Mat& mask) {
 
     cv::bitwise_and(src, src, workingFood, helperMask);
 
-    // cv::imshow("tmp1", workingFood); cv::waitKey();
-
     cv::Mat hsvImage;
     cv::cvtColor(workingFood, hsvImage, cv::COLOR_BGR2HSV);
 
@@ -564,8 +562,6 @@ void FoodSegmenter::refinePestoPasta(const cv::Mat& src, cv::Mat& mask) {
     cv::Mat thresholdingMask = hsvChannels[1] > 0.6 * 255;
     cv::Mat thresholdedImage;
     cv::bitwise_and(src, src, thresholdedImage, thresholdingMask);
-
-    // cv::imshow("thresholdedImage", thresholdedImage);
 
     // Access and process the Y, U, and V channels separately
     std::vector<cv::Mat> thresholdedImageChannels;
@@ -649,6 +645,7 @@ void FoodSegmenter::refinePilawRice(const cv::Mat& src, cv::Mat& mask) {
     // Find contours in the binary mask
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(thresholdedMaskHSV, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    
     // Create a new image to hold the filled shapes
     cv::Mat filledMask = cv::Mat::zeros(thresholdedMaskHSV.size(), CV_8UC1);
 
@@ -681,8 +678,7 @@ void FoodSegmenter::refinePilawRice(const cv::Mat& src, cv::Mat& mask) {
 void FoodSegmenter::refineTomatoPasta(const cv::Mat& src, cv::Mat& mask) {
     cv::Mat workingFood;
     cv::bitwise_and(src, src, workingFood, mask);
-    // cv::imshow("workingFood", workingFood);  cv::waitKey();
-
+    
     // Split the image into individual BGR channels
     std::vector<cv::Mat> channels;
     cv::split(workingFood, channels);
@@ -694,8 +690,6 @@ void FoodSegmenter::refineTomatoPasta(const cv::Mat& src, cv::Mat& mask) {
     cv::Mat bgrThresholded;
     cv::bitwise_and(workingFood, workingFood, bgrThresholded, thresholdedRedChannel);
 
-    // cv::imshow("thresholdedRedChannel", thresholdedRedChannel);
-
     int kernelSizeClosing = 3;
     cv::Mat kernelClosing = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(kernelSizeClosing, kernelSizeClosing));
     // Perform dilation followed by erosion (closing operation)
@@ -703,8 +697,6 @@ void FoodSegmenter::refineTomatoPasta(const cv::Mat& src, cv::Mat& mask) {
     cv::morphologyEx(thresholdedRedChannel, closingMask, cv::MORPH_CLOSE, kernelClosing, cv::Point(1, 1), 5);
     cv::Mat closingImage;
     cv::bitwise_and(workingFood, workingFood, closingImage, closingMask);
-
-    // cv::imshow("closingMask", closingMask);
 
     // Find contours in the binary mask
     std::vector<std::vector<cv::Point>> contours;
@@ -727,10 +719,6 @@ void FoodSegmenter::refineTomatoPasta(const cv::Mat& src, cv::Mat& mask) {
     if (index != -1)
         cv::fillPoly(filledMask, contours[index], cv::Scalar(255));
 
-    // cv::imshow("filledMask", filledMask);
-    // cv::imshow("bgrThresholded", bgrThresholded);
-
-    // cv::waitKey();
     mask = filledMask;
 }
 
