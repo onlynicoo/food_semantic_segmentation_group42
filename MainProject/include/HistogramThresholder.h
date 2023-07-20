@@ -1,16 +1,20 @@
+// Author: Daniele Moschetta
+
 #pragma once
 #include <opencv2/opencv.hpp>
 
+// Handles computation and comparison of image histograms
 class HistogramThresholder {
     private:
         
-        // histogram normalization value
+        // Histogram normalization value
         static const int NORMALIZE_VALUE = 100;
 
-        // it computes hue histogram
+        // Computes hue histogram
         static void getHueHistogram(const cv::Mat&, const cv::Mat&, cv::Mat&);
 
     public:
+        // Struct to represent the distance with respect to a label
         struct LabelDistance {
             int label;
             double distance;
@@ -25,12 +29,12 @@ class HistogramThresholder {
         static const std::string LABELS_HISTOGRAMS_PATH;
         static const std::string LABELS_HISTOGRAMS_NAME;
 
-        // calls getHueHistogram for a given image patch
+        // Calls getHueHistogram for a given image patch
         static void getImageHistogram(const cv::Mat&, const cv::Mat&, cv::Mat&);
 
-        // computes the distances between given image histogram and the labels ones
+        // Computes the distances between given image histogram and the labels ones
         static std::vector<LabelDistance> getLabelDistances(const cv::Mat&, std::vector<int>, const cv::Mat&);
 
-        // 
+        // Reads the manually written histograms file
         static void readLabelsHistogramsFromFile(cv::Mat&);
 };

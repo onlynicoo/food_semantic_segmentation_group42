@@ -1,3 +1,5 @@
+// Author: Nicola Lorenzon, Daniele Moschetta
+
 #include "../include/FoodSegmenter.h"
 
 #include <opencv2/opencv.hpp>

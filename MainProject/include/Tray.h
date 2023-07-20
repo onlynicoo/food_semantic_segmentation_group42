@@ -1,7 +1,9 @@
+// Author: Nicola Lorenzon, Daniele Moschetta
+
 #pragma once
 #include <opencv2/opencv.hpp>
 
-// Declaration of the class PlateFinder
+// Handles the functionalities of tray before and after images
 class Tray {
 
     private:

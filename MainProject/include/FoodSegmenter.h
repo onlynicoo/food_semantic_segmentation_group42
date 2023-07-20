@@ -1,59 +1,64 @@
+// Author: Nicola Lorenzon, Daniele Moschetta
+
 #pragma once
 #include <opencv2/opencv.hpp>
 
+// Handles the segmenting of plates, salad bowl and bread
 class FoodSegmenter {
     private:
 
-        // constants
+        // Constants
         static const int SMALL_WINDOW_SIZE = 50;
         static const int BIG_WINDOW_SIZE = 150;
         static constexpr float PI = 3.141;
 
-        // all the labels for first plates
+        // First dishes labels
         static const std::vector<int> FIRST_PLATES_LABELS;
 
-        // all the labels for second plates
+        // Second dishes labels
         static const std::vector<int> SECOND_PLATES_LABELS;
 
-        // all the labels for side dishes
+        // Side dishes labels
         static const std::vector<int> SIDE_DISHES_LABELS;
         
     public:
 
-        // how many labels, the system must recognize
+        // Number of labels
         static const int NUM_LABELS = 14;
 
-        // all the notable labels
+        // Names of labels
         static const std::string LABEL_NAMES[14];
 
-        // salad label
+        // Salad label
         static const int SALAD_LABEL = 12;
 
-        // bread label
+        // Bread label
         static const int BREAD_LABEL = 13;
 
-        // function for retrieving food masks
+        // Finds food mask from a plate
         static void getFoodMaskFromPlate(const cv::Mat&, cv::Mat&, cv::Vec3f);
+
+        // Segments the foods found in a plate
         static void getFoodMaskFromPlates(const cv::Mat&, cv::Mat&, std::vector<cv::Vec3f> , std::vector<int>&);
 
-        // given a salad bowl, it returns the mask
+        // Finds the salad mask from a salad bowl
         static void getSaladMaskFromBowl(const cv::Mat&, cv::Mat&, cv::Vec3f);
 
-        // it returns the bread mask
+        // Finds the bread mask from the bread area
         static void getBreadMask(const cv::Mat&, const cv::Mat&, cv::Mat&);
 
-        // function for refining Pasta al Pesto
+        // Refines pasta with pesto
         static void refinePestoPasta(const cv::Mat&, cv::Mat&);
 
-        // function for refining Tomato Pasta
+        // Refines pasta with tomato
         static void refineTomatoPasta(const cv::Mat&, cv::Mat&);
 
-        // function for refining Pork Cutlet
+        // Refines pork cutlet
         static void refinePorkCutlet(const cv::Mat&, cv::Mat&);
 
-        // function Pilaw Rice
+        // Refines pilaw rice
         static void refinePilawRice(const cv::Mat&, cv::Mat&);
 
-        // entrypoint function that calls the correct refine function based on the label
+        // Entrypoint function that calls the correct refine function based on the label
         static void refineMask(const cv::Mat&, cv::Mat& , int);
 };

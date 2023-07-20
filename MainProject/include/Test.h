@@ -1,18 +1,23 @@
+// Author: Carmine Graniello
+
 #pragma once
 #include <vector>
 #include <string>
 #include "../include/Tray.h"
 
+// Handles the testing of the system over a set of trays
 class Test {
 
 	private:
-		//Vector containg all the Tray (before,after) objects
+		
+        // Contains all the Tray (before, after) objects
 		std::vector<Tray> trayVector;
 
 	public:
-		//constructor
+		
+        // Constructor
 		Test(std::vector<Tray>);
 
-		//It takes in input "Food Dataset Leftover". Using trayVector, it starts the test
+		// Tests the Trays taking in input the path to "Food_leftover_dataset"
 		void testTheSystem(const std::string&);
 };

@@ -1,3 +1,5 @@
+// Author: Carmine Graniello, Nicola Lorenzon, Daniele Moschetta
+
 #include <cstdlib>
 #include <ctime>
 #include <opencv2/opencv.hpp>

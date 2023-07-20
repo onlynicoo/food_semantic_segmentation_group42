@@ -1,3 +1,5 @@
+// Author: Carmine Graniello
+
 #include "../include/MetricsCalculation.h"
 
 #include <opencv2/opencv.hpp>

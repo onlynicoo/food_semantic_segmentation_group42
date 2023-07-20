@@ -1,3 +1,5 @@
+// Author: Daniele Moschetta
+
 #include "../include/HistogramThresholder.h"
 
 #include <fstream>

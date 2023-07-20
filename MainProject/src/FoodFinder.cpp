@@ -1,3 +1,5 @@
+// Author: Nicola Lorenzon
+
 #include "../include/FoodFinder.h"
 
 #include <opencv2/opencv.hpp>

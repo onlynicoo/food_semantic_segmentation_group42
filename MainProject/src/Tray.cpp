@@ -1,3 +1,5 @@
+// Author: Nicola Lorenzon, Daniele Moschetta
+
 #include "../include/Tray.h"
 
 #include <fstream>

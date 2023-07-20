@@ -1,3 +1,5 @@
+// Author: Carmine Graniello, Nicola Lorenzon, Daniele Moschetta
+
 #include <iostream>
 #include <opencv2/opencv.hpp>
 

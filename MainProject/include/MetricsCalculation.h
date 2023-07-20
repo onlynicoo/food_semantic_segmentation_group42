@@ -1,3 +1,5 @@
+// Author: Carmine Graniello
+
 #pragma once
 #include <opencv2/opencv.hpp>
 
@@ -101,16 +103,16 @@ class RectangleFileOur
 
 /****************************************************************************************************************************/
 
-//Tool to analyze bounding boxes files
+// Tool to analyze bounding boxes files
 std::pair<std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string, std::string);
 
-//To compute IoU from a single food item
+// To compute IoU from a single food item
 double singlePlateFoodSegmentationIoUMetric(const std::vector<int>&, const std::vector<int>&);
 
-//To compute Ri ratio
+// To compute Ri ratio
 double singlePlateLeftoverEstimationMetric(const cv::Mat&, const cv::Mat&);
 
-//platform launch method. Takes in input food images and leftover's BB path and masks
+// Platform launch method, takes in input food images and leftover's BB path and masks
 std::pair<double, int> OneImageSegmentationMetricCalculations(
 	int,
 
@@ -130,4 +132,5 @@ std::pair<double, int> OneImageSegmentationMetricCalculations(
 	const std::string
 );
 
+// Computes the Average Precision
 double calculateAP(const std::vector<Prediction>&, int,int);
