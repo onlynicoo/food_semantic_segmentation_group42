@@ -22,6 +22,7 @@ class Prediction {
 		double getConfidence() const { return confidence; }
 		bool isTP() const { return isTruePositive; }
 
+		//Constructor
 		Prediction(int cid, double conf, bool iTP)
 			: classID(cid), confidence(conf), isTruePositive(iTP) {}
 };
@@ -46,6 +47,7 @@ class RectangleFileGT
 		int getRectId() const { return rectID; }
 		std::vector<int> getCoords() const { return coordinates; }
 
+		//Constructor
 		RectangleFileGT(int id, const std::vector<int>& coords)
 			: rectID(id), coordinates(coords) {}
 };
@@ -71,7 +73,11 @@ class RectangleFileOur
 	private:
 		int rectID;
 		std::vector<int> coordinates;
+		
+		//It has been found a match
 		bool isTaken;
+
+		//its confidence score
 		double prediction;
 
 	public:
@@ -86,6 +92,7 @@ class RectangleFileOur
 		void setIsTaken(bool taken) { isTaken = taken; }
 		void setPrediction(double pred) { prediction = pred; }
 
+		//Constructor
 		RectangleFileOur(int id, const std::vector<int>& coords, bool tak)
 			: rectID(id), coordinates(coords), isTaken(tak), prediction(0) {}
 };
@@ -94,13 +101,16 @@ class RectangleFileOur
 
 /****************************************************************************************************************************/
 
-
+//Tool to analyze bounding boxes files
 std::pair<std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string, std::string);
 
+//To compute IoU from a single food item
 double singlePlateFoodSegmentationIoUMetric(const std::vector<int>&, const std::vector<int>&);
 
+//To compute Ri ratio
 double singlePlateLeftoverEstimationMetric(const cv::Mat&, const cv::Mat&);
 
+//platform launch method. Takes in input food images and leftover's BB path and masks
 std::pair<double, int> OneImageSegmentationMetricCalculations(
 	int,
 
