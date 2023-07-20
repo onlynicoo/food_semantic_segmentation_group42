@@ -95,7 +95,7 @@ int findLeftoverNumber(const std::string& str)
  *
  * @param dataSetPath path to "Food Leftover Dataset"
  */
-void Test::test_the_system(const std::string& dataSetPath)
+void Test::testTheSystem(const std::string& dataSetPath)
 {
 	std::cout << "---STARTING TEST---";
 
