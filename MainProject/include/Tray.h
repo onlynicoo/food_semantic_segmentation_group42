@@ -23,8 +23,10 @@ class Tray {
         cv::Mat trayBeforeSegmentationMask;
         cv::Mat trayAfterSegmentationMask;
         
+        // Function to save the just computed segmentation mask
         void saveSegmentedMask(const std::string&, const cv::Mat&);
 
+        // Function to segment bread
         cv::Mat SegmentBread(cv::Mat);
 
     public:
@@ -41,6 +43,7 @@ class Tray {
         // Show the trays before and after the meal, the detection bounding boxes and the segmentation masks
         void showTray();
 
+        // Function to print out food quantity
         void printFoodQuantities();
 
 };

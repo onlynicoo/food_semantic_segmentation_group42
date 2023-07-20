@@ -29,7 +29,13 @@ class FoodFinder {
         static const int max_radius_hough_salad_refine = 202;
 
     public:
+
+        //  function to find plates
         static std::vector<cv::Vec3f> findPlates(const cv::Mat&);
+
+        //  function to find salad bowl
         static std::vector<cv::Vec3f> findSaladBowl(const cv::Mat&, bool);
+
+        //  function to find bread
         static void findBread(const cv::Mat&, cv::Mat&);
 };
