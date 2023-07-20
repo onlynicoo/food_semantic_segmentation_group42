@@ -356,18 +356,16 @@ void Tray::showTray() {
     cv::Size stdSize(0, 0);
     stdSize = trayBeforeImage.size();
 
-    cv::Mat tmp1_1, tmp1_2, tmp1_3, tmp2_1, tmp2_2, tmp2_3;
+    cv::Mat foodImageClear, foodImageDetection, foodImageSegmentation, leftoverClear, leftoverDetection, leftoverSegmentation;
 
     cv::Mat colorBeforeSegmented, colorAfterSegmented;
     getColoredSegmentationMask(trayBeforeSegmentationMask, colorBeforeSegmented);
     getColoredSegmentationMask(trayAfterSegmentationMask, colorAfterSegmented);
 
-    tmp1_1 = trayBeforeImage.clone();
+    foodImageClear = trayBeforeImage.clone();
 
     // Resize output to have all images of same size
-    resize(trayAfterImage, tmp2_1, stdSize);
-    // resize(OverimposeDetection(traysBefore, traysBeforeDetected), tmp1_2, stdSize);
-    // resize(OverimposeDetection(traysAfter, traysAfterDetected), tmp2_2, stdSize);
+    resize(trayAfterImage, leftoverClear, stdSize);
 
     std::vector<cv::Vec3f> saladBefore = FoodFinder::findSaladBowl(trayBeforeImage, false);
     std::vector<cv::Vec3f> saladAfter;
@@ -379,21 +377,21 @@ void Tray::showTray() {
     cv::Mat imgWithDetectionBoxesBefore, imgWithDetectionBoxesAfter;
     overimposeDetection(trayBeforeImage, trayBeforeBoundingBoxesPath, imgWithDetectionBoxesBefore);
     overimposeDetection(trayAfterImage, trayAfterBoundingBoxesPath, imgWithDetectionBoxesAfter);
-    resize(imgWithDetectionBoxesBefore, tmp1_2, stdSize);
-    resize(imgWithDetectionBoxesAfter, tmp2_2, stdSize);
-    resize(colorBeforeSegmented, tmp1_3, stdSize);
-    resize(colorAfterSegmented, tmp2_3, stdSize);
+    resize(imgWithDetectionBoxesBefore, foodImageDetection, stdSize);
+    resize(imgWithDetectionBoxesAfter, leftoverDetection, stdSize);
+    resize(colorBeforeSegmented, foodImageSegmentation, stdSize);
+    resize(colorAfterSegmented, leftoverSegmentation, stdSize);
 
     // Add image to current image row
-    tmp2_3.copyTo(imageRow);
-    hconcat(tmp2_2, imageRow, imageRow);
-    hconcat(tmp2_1, imageRow, imageRow);
+    leftoverSegmentation.copyTo(imageRow);
+    hconcat(leftoverDetection, imageRow, imageRow);
+    hconcat(leftoverClear, imageRow, imageRow);
     imageRow.copyTo(imageGrid);
     imageRow.release();
 
-    tmp1_3.copyTo(imageRow);
-    hconcat(tmp1_2, imageRow, imageRow);
-    hconcat(tmp1_1, imageRow, imageRow);
+    foodImageSegmentation.copyTo(imageRow);
+    hconcat(foodImageDetection, imageRow, imageRow);
+    hconcat(foodImageClear, imageRow, imageRow);
     vconcat(imageRow, imageGrid, imageGrid);
     imageRow.release();
 
