@@ -1,11 +1,12 @@
+#include "../include/MetricsCalculation.h"
+
+#include <opencv2/opencv.hpp>
+
 #include <fstream>
 #include <sstream>
 #include <vector>
 #include <string>
 
-#include <opencv2/opencv.hpp>
-
-#include "../include/MetricsCalculation.h"
 
 /**
  * Given two BB file paths, this function will open those files
@@ -402,7 +403,7 @@ std::pair<double, int> OneImageSegmentationMetricCalculations(
 		for (const auto& gTrectlo : gTRectsLO)
 		{
 			//"For food localization and food segmentation you need to evaluate your 
-			//system on the “before” images and the images for difficulties 1) and 2) "
+			//system on the ï¿½beforeï¿½ images and the images for difficulties 1) and 2) "
 			if (code == 1 || code == 2)
 			{
 				numberFoodItemsSingleImage++;

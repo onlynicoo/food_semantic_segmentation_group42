@@ -4,7 +4,6 @@
 #include <opencv2/opencv.hpp>
 
 const std::string HistogramThresholder::LABELS_HISTOGRAMS_PATH = "../data/labels_histograms.txt";
-const std::string HistogramThresholder::LABELS_HISTOGRAMS_NAME = "labelHistograms";
 
 /**
  * The function "getLabelDistances" calculates the distances between the histograms of labels and an

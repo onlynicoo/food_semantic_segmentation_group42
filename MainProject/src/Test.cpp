@@ -1,3 +1,5 @@
+#include "../include/Test.h"
+
 #include <opencv2/opencv.hpp>
 
 #include <fstream>
@@ -5,7 +7,6 @@
 #include <vector>
 #include <string>
 
-#include "../include/Test.h"
 #include "../include/Tray.h"
 #include "../include/MetricsCalculation.h"
 

@@ -21,7 +21,6 @@ class HistogramThresholder {
         static const int NUM_VALUES = 60;
         static const int DATA_TYPE = CV_8UC1;
         static const std::string LABELS_HISTOGRAMS_PATH;
-        static const std::string LABELS_HISTOGRAMS_NAME;
 
         static void getImageHistogram(const cv::Mat&, const cv::Mat&, cv::Mat&);
         static std::vector<LabelDistance> getLabelDistances(const cv::Mat&, std::vector<int>, const cv::Mat&);
