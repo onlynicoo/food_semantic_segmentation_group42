@@ -9,5 +9,5 @@ class Test {
 		std::vector<Tray> trayVector;
 	public:
 		Test(std::vector<Tray>);
-		void test_the_system(const std::string&);
+		void testTheSystem(const std::string&);
 };

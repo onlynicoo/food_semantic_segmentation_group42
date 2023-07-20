@@ -14,13 +14,13 @@
  * std::vector<RectangleFileOur> for second input as our's BB_path
  * It will return them as a pair, to be studied in second moment.
  *
- * @param gtBB_path path to ground truth bounding box .txt file
- * @param ourBB_path path to a bounding box .txt file computed by our system
+ * @param gtBBpath path to ground truth bounding box .txt file
+ * @param ourBBpath path to a bounding box .txt file computed by our system
  * @return a pair of vectors of specific types of rectangle. See RectangleFileGT and RectangleFileOur for more info
  */
-std::pair<std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string gtBB_path, std::string ourBB_path)
+std::pair<std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> boundingBoxFileTokenizer(std::string gtBBpath, std::string ourBBpath)
 {
-	std::ifstream fileGT(gtBB_path);
+	std::ifstream fileGT(gtBBpath);
 
 	std::string lineGT;
 
@@ -56,7 +56,7 @@ std::pair<std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> boundingB
 	}
 
 
-	std::ifstream fileOur(ourBB_path);
+	std::ifstream fileOur(ourBBpath);
 	std::string lineO;
 	std::vector<RectangleFileOur> rectanglesOur;
 
@@ -173,7 +173,7 @@ double singlePlateLeftoverEstimationMetric(const cv::Mat& beforeMask, const cv::
  * @param gtNumItemClass_pc the number of occasions of classID objects in ground truth (to calculate Recall)
  * @return a double, AP of the system
  */
-double calculateAP(const std::vector<Prediction>& predictions, int classID, int gtNumItemClass_pc)
+double calculateAP(const std::vector<Prediction>& predictions, int classID, int gTNumberItemsPerClass)
 {
 	double ap = 0.0;
 	int cumulativeTP = 0;
@@ -196,7 +196,7 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
 	// Computing precision and recall values for each prediction
 	std::vector<double> precision;
 	std::vector<double> recall;
-	std::vector<cv::Point2d> p_r_points; //X recall - Y precision
+	std::vector<cv::Point2d> prPoints; //X recall - Y precision
 	for (const Prediction& pred : sortedPredictions) {
 		if (pred.getClassId() == classID) {
 			if (pred.isTP()) {
@@ -207,8 +207,8 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
 			}
 
 			double currPrecision = static_cast<double>(cumulativeTP) / (cumulativeTP + cumulativeFP);
-			double currRecall = static_cast<double>(cumulativeTP) / gtNumItemClass_pc;
-			p_r_points.push_back(cv::Point2d(currRecall, currPrecision));
+			double currRecall = static_cast<double>(cumulativeTP) / gTNumberItemsPerClass;
+			prPoints.push_back(cv::Point2d(currRecall, currPrecision));
 		}
 	}
 
@@ -217,25 +217,25 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
 	std::vector<cv::Point2d> precisionRecallCurve;
 
 	// Sort each p_r point by decreasing order of confidence
-	std::sort(p_r_points.begin(), p_r_points.end(), [](const cv::Point2d& a, const cv::Point2d& b) {
+	std::sort(prPoints.begin(), prPoints.end(), [](const cv::Point2d& a, const cv::Point2d& b) {
 		return a.x < b.x;
 		});
 
 	// Associate each p_r point to the nearest one among the 11 points
-	for (int i = 0; i < p_r_points.size(); i++)
+	for (int i = 0; i < prPoints.size(); i++)
 	{
 		int nearestIndex = -1;
 		double minDiffSoFar = 2;
 		for (int j = 0; j < recallPoints.size(); j++)
 		{
-			double currDiff = abs(p_r_points.at(i).x - recallPoints.at(j));
+			double currDiff = abs(prPoints.at(i).x - recallPoints.at(j));
 			if (currDiff <= minDiffSoFar)
 			{
 				minDiffSoFar = currDiff;
 				nearestIndex = j;
 			}
 		}
-		p_r_points.at(i).x = recallPoints.at(nearestIndex);
+		prPoints.at(i).x = recallPoints.at(nearestIndex);
 	}
 
 	// For each p_r point we associate as y the highest
@@ -244,11 +244,11 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
 	{
 		double maxPrecision = -1;
 
-		for (int i = 0; i < p_r_points.size(); i++)
+		for (int i = 0; i < prPoints.size(); i++)
 		{
-			if (p_r_points.at(i).x == recallPoints.at(rp))
-				if (maxPrecision < p_r_points.at(i).y)
-					maxPrecision = p_r_points.at(i).y;
+			if (prPoints.at(i).x == recallPoints.at(rp))
+				if (maxPrecision < prPoints.at(i).y)
+					maxPrecision = prPoints.at(i).y;
 		}
 		precisionRecallCurve.push_back(cv::Point2d(recallPoints.at(rp),maxPrecision));
 	}
@@ -291,41 +291,41 @@ double calculateAP(const std::vector<Prediction>& predictions, int classID, int 
  * To study and compare all info retrieved from "leftoverY"	(Code Y)
  * 
  * @param code number from 0 (FoodImage) to 3 (leftover3)
- * @param gT_FI_masks image mask of a ground truth's food image
- * @param gT_FI_BBs path to gT_FI_masks bounding boxes .txt file
- * @param ourMasks_FI image mask of food image computed by our system
- * @param ourBBs_FI path to ourMasks_FI bounding boxes .txt file
+ * @param gTFImasks image mask of a ground truth's food image
+ * @param gTFIBBs path to gTFImasks bounding boxes .txt file
+ * @param ourMasksFI image mask of food image computed by our system
+ * @param ourBBsFI path to ourMasksFI bounding boxes .txt file
  * @param predictions vector in which we save all matches with ground truth food items
  * @param predictedClasses a set of integers representing all classes we've analyzed so far
- * @param gTfoodItem_numbers a vector saving a pair (classID, #occurenciesOfClassID), useful for mAP
+ * @param gTfoodItemNumbers a vector saving a pair (classID, #occurenciesOfClassID), useful for mAP
  * @param gtf an integer to take count of the Groun Truth Food items we've encountered so far
- * @param gT_leftover_masks image mask of a ground truth's leftover image
- * @param gT_leftover_BBs path to gT_leftover_masks bounding boxes .txt file
- * @param ourMasks_leftover image mask of leftover image computed by our system
- * @param ourBBs_leftover path to ourMasks_leftover bounding boxes .txt file
+ * @param gTLeftoverMasks image mask of a ground truth's leftover image
+ * @param gTLeftoverBBs path to gT_leftover_masks bounding boxes .txt file
+ * @param ourMasksLeftover image mask of leftover image computed by our system
+ * @param ourBBsLeftover path to ourMasksLeftover bounding boxes .txt file
  * @return a pair: (sum of all food items' IoU's found in an image, # of food item encountered) => e.g : (2.89477383,4)
  */
 std::pair<double, int> OneImageSegmentationMetricCalculations(
 	int code,
 
-	const cv::Mat& gT_FI_masks,
-	const std::string gT_FI_BBs,
-	const cv::Mat& ourMasks_FI,
-	std::string ourBBs_FI,
+	const cv::Mat& gTFImasks,
+	const std::string gTFIBBs,
+	const cv::Mat& ourMasksFI,
+	std::string ourBBsFI,
 
 	std::vector<Prediction>& predictions,
 	std::set<int>& predictedClasses,
-	std::vector<std::pair<int, int>>& gTfoodItem_numbers,
+	std::vector<std::pair<int, int>>& gTfoodItemNumbers,
 	int& gtf,
 
-	const cv::Mat& gT_leftover_masks,
-	const std::string gT_leftover_BBs,
-	const cv::Mat& ourMasks_leftover,
-	const std::string ourBBs_leftover
+	const cv::Mat& gTLeftoverMasks,
+	const std::string gTLeftoverBBs,
+	const cv::Mat& ourMasksLeftover,
+	const std::string ourBBsLeftover
 )
 {
 	std::string output = "\nR_i's found: {   ";
-	double sum_iou = 0.0;
+	double sumIoUs = 0.0;
 
 	int numberFoodItemsSingleImage = 0;
 
@@ -333,43 +333,43 @@ std::pair<double, int> OneImageSegmentationMetricCalculations(
 	if (code == 0)
 	{
 
-		std::pair< std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> rectsForIoU = boundingBoxFileTokenizer(gT_FI_BBs, ourBBs_FI);
-		std::vector<RectangleFileGT> gT_rects_FI = rectsForIoU.first;
-		std::vector<RectangleFileOur> our_rects_FI = rectsForIoU.second;
+		std::pair< std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> rectsForIoU = boundingBoxFileTokenizer(gTFIBBs, ourBBsFI);
+		std::vector<RectangleFileGT> gTRectsFI = rectsForIoU.first;
+		std::vector<RectangleFileOur> ourRectsFI = rectsForIoU.second;
 
-		for (const auto& gT_rect_fi : gT_rects_FI)
+		for (const auto& gTrectfi : gTRectsFI)
 		{
 
 		    numberFoodItemsSingleImage++;
-			int gTFoodItem_ID = gT_rect_fi.getRectId();
+			int gTFoodItemID = gTrectfi.getRectId();
 			bool toAdd = true;
-			for (auto& pair : gTfoodItem_numbers)
+			for (auto& pair : gTfoodItemNumbers)
 			{
-				if (pair.first == gTFoodItem_ID)
+				if (pair.first == gTFoodItemID)
 				{
 					pair.second++;
 					toAdd = false;
 					break;
 				}
 			}
-			if (toAdd) { gTfoodItem_numbers.push_back(std::make_pair(gTFoodItem_ID, 1)); }
+			if (toAdd) { gTfoodItemNumbers.push_back(std::make_pair(gTFoodItemID, 1)); }
 
 			bool foundMatch = false;
 
-			for (auto& our_rect_fi : our_rects_FI)
+			for (auto& ouRrectfi : ourRectsFI)
 			{
-				if (gT_rect_fi.getRectId() == our_rect_fi.getRectId())
+				if (gTrectfi.getRectId() == ouRrectfi.getRectId())
 				{
 					//If true there's a match
 					//I'll take the two gray levels representing the two masks gray levels
 					foundMatch = true;
-					our_rect_fi.setIsTaken(true);
+					ouRrectfi.setIsTaken(true);
 
-					double single_iou = singlePlateFoodSegmentationIoUMetric(gT_rect_fi.getCoords(), our_rect_fi.getCoords());
-					our_rect_fi.setPrediction(single_iou);
-					sum_iou += single_iou;
+					double single_iou = singlePlateFoodSegmentationIoUMetric(gTrectfi.getCoords(), ouRrectfi.getCoords());
+					ouRrectfi.setPrediction(single_iou);
+					sumIoUs += single_iou;
 
-					std::cout << "\nFood " << our_rect_fi.getRectId() << ", IoU = " << single_iou;
+					std::cout << "\nFood " << ouRrectfi.getRectId() << ", IoU = " << single_iou;
 
 					break;
 				}
@@ -378,13 +378,12 @@ std::pair<double, int> OneImageSegmentationMetricCalculations(
 			if (!foundMatch) {
 				//There's no match, no food item founded in our FOOD IMAGE (BAD NEWS)
 				// numberFoodsGroundTruth++ && iou+=0 means that our mIoU will be lower
-				//std::cout << "\n\n" << "NO MATCH FOR FOOD: " << gT_rect_fi.getRectId() << " in " << gT_FI_BBs;
 			}
 
 		}
 
 		//AP calculations FI
-		for (const auto& r : our_rects_FI)
+		for (const auto& r : ourRectsFI)
 		{
 			int id = r.getRectId();
 			predictedClasses.insert(id);
@@ -396,50 +395,50 @@ std::pair<double, int> OneImageSegmentationMetricCalculations(
 
 	else if (code == 1 || code == 2)
 	{
-		std::pair< std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> rectsForIoU = boundingBoxFileTokenizer(gT_leftover_BBs, ourBBs_leftover);
-		std::vector<RectangleFileGT> gT_rects_LO = rectsForIoU.first;
-		std::vector<RectangleFileOur> our_rects_LO = rectsForIoU.second;
+		std::pair< std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> rectsForIoU = boundingBoxFileTokenizer(gTLeftoverBBs, ourBBsLeftover);
+		std::vector<RectangleFileGT> gTRectsLO = rectsForIoU.first;
+		std::vector<RectangleFileOur> ourRectsLO = rectsForIoU.second;
 
-		for (const auto& gT_rect_lo : gT_rects_LO)
+		for (const auto& gTrectlo : gTRectsLO)
 		{
 			//"For food localization and food segmentation you need to evaluate your 
 			//system on the “before” images and the images for difficulties 1) and 2) "
 			if (code == 1 || code == 2)
 			{
 				numberFoodItemsSingleImage++;
-				int gTFoodItem_ID = gT_rect_lo.getRectId();
+				int gTFoodItemID = gTrectlo.getRectId();
 				bool toAdd = true;
-				for (auto& pair : gTfoodItem_numbers)
+				for (auto& pair : gTfoodItemNumbers)
 				{
-					if (pair.first == gTFoodItem_ID)
+					if (pair.first == gTFoodItemID)
 					{
 						pair.second++;
 						toAdd = false;
 						break;
 					}
 				}
-				if (toAdd) { gTfoodItem_numbers.push_back(std::make_pair(gTFoodItem_ID, 1)); }
+				if (toAdd) { gTfoodItemNumbers.push_back(std::make_pair(gTFoodItemID, 1)); }
 
 			}
 
 			bool foundMatch = false;
 
-			for (auto& our_rect_lo : our_rects_LO)
+			for (auto& ouRrectlo : ourRectsLO)
 			{
-				if (gT_rect_lo.getRectId() == our_rect_lo.getRectId())
+				if (gTrectlo.getRectId() == ouRrectlo.getRectId())
 				{
 					//If true there's a match
 					//I'll take the two gray levels representing the two masks gray levels
 					foundMatch = true;
-					our_rect_lo.setIsTaken(true);
+					ouRrectlo.setIsTaken(true);
 
 					//We evaluate also for 3) because we need the confidence score
-					double single_iou = singlePlateFoodSegmentationIoUMetric(gT_rect_lo.getCoords(), our_rect_lo.getCoords());
-					our_rect_lo.setPrediction(single_iou);
+					double singleIoU = singlePlateFoodSegmentationIoUMetric(gTrectlo.getCoords(), ouRrectlo.getCoords());
+					ouRrectlo.setPrediction(singleIoU);
 
-					std::cout << "\nFood " << our_rect_lo.getRectId() << ", IoU = " << single_iou;
+					std::cout << "\nFood " << ouRrectlo.getRectId() << ", IoU = " << singleIoU;
 
-					sum_iou += single_iou;
+					sumIoUs += singleIoU;
 
 					break;
 				}
@@ -448,13 +447,12 @@ std::pair<double, int> OneImageSegmentationMetricCalculations(
 			if (!foundMatch) {
 				//There's no match, no food item founded in our FOOD IMAGE (BAD NEWS)
 				// numberFoodsGroundTruth++ && iou+=0 means that our mIoU will be lower
-				//std::cout << "\n" << "NO MATCH FOR FOOD: " << gT_rect_lo.getRectId() << " in " << gT_leftover_BBs;
 			}
 
 		}
 
 		//AP calculations FI
-		for (const auto& r : our_rects_LO)
+		for (const auto& r : ourRectsLO)
 		{
 			int id = r.getRectId();
 			predictedClasses.insert(id);
@@ -467,94 +465,85 @@ std::pair<double, int> OneImageSegmentationMetricCalculations(
 	//Leftover Estimation
 	if (code!=0)
 	{
-		std::pair< std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> rectsForLE_FI = boundingBoxFileTokenizer(gT_FI_BBs, ourBBs_FI);
-		std::pair< std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> rectsForLE_LO = boundingBoxFileTokenizer(gT_leftover_BBs, ourBBs_leftover);
-		std::vector<RectangleFileGT> gT_rects_FI = rectsForLE_FI.first;
-		std::vector<RectangleFileOur> our_rects_FI = rectsForLE_FI.second;
-		std::vector<RectangleFileGT> gT_rects_LO = rectsForLE_LO.first;
-		std::vector<RectangleFileOur> our_rects_LO = rectsForLE_LO.second;
+		std::pair< std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> rectsForLEFI = boundingBoxFileTokenizer(gTFIBBs, ourBBsFI);
+		std::pair< std::vector<RectangleFileGT>, std::vector<RectangleFileOur>> rectsForLELO = boundingBoxFileTokenizer(gTLeftoverBBs, ourBBsLeftover);
+		std::vector<RectangleFileGT> gTRectsFI = rectsForLEFI.first;
+		std::vector<RectangleFileOur> ourRectsFI = rectsForLEFI.second;
+		std::vector<RectangleFileGT> gTRectsLO = rectsForLELO.first;
+		std::vector<RectangleFileOur> ourRectsLO = rectsForLELO.second;
 
 
-		for (const auto& gT_rect_lo : gT_rects_LO)
+		for (const auto& gTrectlo : gTRectsLO)
 		{
+			double groundTruthRI = 0;
+			double ourRI = 0;
 
-			double gTR_I = 0;
-			double ourR_I = 0;
-
-			for (const auto& gT_rects_fi : gT_rects_FI)
+			for (const auto& gTrectsfi : gTRectsFI)
 			{
-				if (gT_rect_lo.getRectId() == gT_rects_fi.getRectId())
+				if (gTrectlo.getRectId() == gTrectsfi.getRectId())
 				{
-					cv::Mat oneMask_GTLO(gT_leftover_masks.size(), CV_8UC1, cv::Scalar(255));
-					cv::Mat oneMask_GTFI(gT_FI_masks.size(), CV_8UC1, cv::Scalar(255));
+					cv::Mat oneMaskGTLO(gTLeftoverMasks.size(), CV_8UC1, cv::Scalar(255));
+					cv::Mat oneMaskGTFI(gTFImasks.size(), CV_8UC1, cv::Scalar(255));
 
 					//TAKING GROUND TRUTH LEFTOVER MASK
-					for (int row = gT_rect_lo.getCoords().at(1); row < gT_rect_lo.getCoords().at(1) + gT_rect_lo.getCoords().at(3); row++)
+					for (int row = gTrectlo.getCoords().at(1); row < gTrectlo.getCoords().at(1) + gTrectlo.getCoords().at(3); row++)
 					{
-						for (int col = gT_rect_lo.getCoords().at(0); col < gT_rect_lo.getCoords().at(0) + gT_rect_lo.getCoords().at(2); col++)
-							if (gT_leftover_masks.at<uchar>(row, col) == (uchar)gT_rect_lo.getRectId())
+						for (int col = gTrectlo.getCoords().at(0); col < gTrectlo.getCoords().at(0) + gTrectlo.getCoords().at(2); col++)
+							if (gTLeftoverMasks.at<uchar>(row, col) == (uchar)gTrectlo.getRectId())
 							{
-								oneMask_GTLO.at<uchar>(row, col) = (uchar)gT_rect_lo.getRectId();
+								oneMaskGTLO.at<uchar>(row, col) = (uchar)gTrectlo.getRectId();
 							}
 					}
 					
 					//TAKING GROUND TRUTH LEFTOVER MASK
-					for (int row = gT_rects_fi.getCoords().at(1); row < gT_rects_fi.getCoords().at(1) + gT_rects_fi.getCoords().at(3); row++)
+					for (int row = gTrectsfi.getCoords().at(1); row < gTrectsfi.getCoords().at(1) + gTrectsfi.getCoords().at(3); row++)
 					{
-						for (int col = gT_rects_fi.getCoords().at(0); col < gT_rects_fi.getCoords().at(0) + gT_rects_fi.getCoords().at(2); col++)
-							if (gT_FI_masks.at<uchar>(row, col) == (uchar)gT_rects_fi.getRectId())
+						for (int col = gTrectsfi.getCoords().at(0); col < gTrectsfi.getCoords().at(0) + gTrectsfi.getCoords().at(2); col++)
+							if (gTFImasks.at<uchar>(row, col) == (uchar)gTrectsfi.getRectId())
 							{
-								oneMask_GTFI.at<uchar>(row, col) = (uchar)gT_rects_fi.getRectId();
+								oneMaskGTFI.at<uchar>(row, col) = (uchar)gTrectsfi.getRectId();
 							}
 					}
 
-					/*cv::imshow("gtfi", oneMask_GTFI);
-					cv::imshow("gtlo", oneMask_GTLO);
-					cv::waitKey(0);*/
-
 					//COMPARING THEM. gtR_I CALCULATION
-					gTR_I = singlePlateLeftoverEstimationMetric(oneMask_GTFI, oneMask_GTLO);
+					groundTruthRI = singlePlateLeftoverEstimationMetric(oneMaskGTFI, oneMaskGTLO);
 				}
 			}
 
-			for (auto& our_rect_lo : our_rects_LO)
+			for (auto& ourrectlo : ourRectsLO)
 			{
-				if (gT_rect_lo.getRectId() == our_rect_lo.getRectId())
+				if (gTrectlo.getRectId() == ourrectlo.getRectId())
 				{
-					for (auto& our_rect_fi : our_rects_FI)
+					for (auto& ourrectfi : ourRectsFI)
 					{
-						if (our_rect_fi.getRectId() == our_rect_lo.getRectId())
+						if (ourrectfi.getRectId() == ourrectlo.getRectId())
 						{
-							cv::Mat oneMask_OURLO(ourMasks_leftover.size(), CV_8UC1, cv::Scalar(255));
-							cv::Mat oneMask_OURFI(ourMasks_FI.size(), CV_8UC1, cv::Scalar(255));
+							cv::Mat oneMaskOURLO(ourMasksLeftover.size(), CV_8UC1, cv::Scalar(255));
+							cv::Mat oneMaskOURFI(ourMasksFI.size(), CV_8UC1, cv::Scalar(255));
 
 
-							for (int row = our_rect_lo.getCoords().at(1); row < our_rect_lo.getCoords().at(1) + our_rect_lo.getCoords().at(3); row++)
+							for (int row = ourrectlo.getCoords().at(1); row < ourrectlo.getCoords().at(1) + ourrectlo.getCoords().at(3); row++)
 							{
-								for (int col = our_rect_lo.getCoords().at(0); col < our_rect_lo.getCoords().at(0) + our_rect_lo.getCoords().at(2); col++)
-									if (ourMasks_leftover.at<uchar>(row, col) == (uchar)our_rect_lo.getRectId())
+								for (int col = ourrectlo.getCoords().at(0); col < ourrectlo.getCoords().at(0) + ourrectlo.getCoords().at(2); col++)
+									if (ourMasksLeftover.at<uchar>(row, col) == (uchar)ourrectlo.getRectId())
 									{
-										oneMask_OURLO.at<uchar>(row, col) = (uchar)our_rect_lo.getRectId();
+										oneMaskOURLO.at<uchar>(row, col) = (uchar)ourrectlo.getRectId();
 									}
 							}
-							for (int row = our_rect_fi.getCoords().at(1); row < our_rect_fi.getCoords().at(1) + our_rect_fi.getCoords().at(3); row++)
+							for (int row = ourrectfi.getCoords().at(1); row < ourrectfi.getCoords().at(1) + ourrectfi.getCoords().at(3); row++)
 							{
-								for (int col = our_rect_fi.getCoords().at(0); col < our_rect_fi.getCoords().at(0) + our_rect_fi.getCoords().at(2); col++)
-									if (ourMasks_FI.at<uchar>(row, col) == (uchar)our_rect_fi.getRectId())
+								for (int col = ourrectfi.getCoords().at(0); col < ourrectfi.getCoords().at(0) + ourrectfi.getCoords().at(2); col++)
+									if (ourMasksFI.at<uchar>(row, col) == (uchar)ourrectfi.getRectId())
 									{
-										oneMask_OURFI.at<uchar>(row, col) = (uchar)our_rect_fi.getRectId();
+										oneMaskOURFI.at<uchar>(row, col) = (uchar)ourrectfi.getRectId();
 									}
 							}
 
-							/*cv::imshow("ourfi", oneMask_OURFI);
-							cv::imshow("ourlo", oneMask_OURLO);
-							cv::waitKey(0);*/
+							ourRI = singlePlateLeftoverEstimationMetric(oneMaskOURFI, oneMaskOURLO);
 
-
-							ourR_I = singlePlateLeftoverEstimationMetric(oneMask_OURFI, oneMask_OURLO);
-							std::cout << "\n\nFood item " << gT_rect_lo.getRectId() << " : " << "our R_i = " << ourR_I << "\n";
-							std::cout << "Food item " << gT_rect_lo.getRectId() << " : " << "gT R_i = " << gTR_I << "\n";
-							std::cout << "Food item " << gT_rect_lo.getRectId() << " : " << "abs diff = " << abs(ourR_I-gTR_I)<<"\n";
+							std::cout << "\n\nFood item " << gTrectlo.getRectId() << " : " << "our R_i = " << ourRI << "\n";
+							std::cout << "Food item " << gTrectlo.getRectId() << " : " << "gT R_i = " << groundTruthRI << "\n";
+							std::cout << "Food item " << gTrectlo.getRectId() << " : " << "abs diff = " << abs(ourRI - groundTruthRI)<<"\n";
 							break;
 						}
 					}
@@ -562,87 +551,9 @@ std::pair<double, int> OneImageSegmentationMetricCalculations(
 
 			}
 		}
-
-		/*for (const auto& gT_rect_lo : gT_rects_LO)
-		{
-			bool foundMatch = false;
-
-			for (auto& our_rect_lo : our_rects_LO) 
-			{
-				if (gT_rect_lo.getRectId() == our_rect_lo.getRectId())
-				{
-					foundMatch = true;
-					our_rect_lo.setIsTaken(true);
-
-
-					//If true there's a match
-					//I'll take the two gray levels representing the two masks gray levels
-
-					cv::Mat oneMask_GTLO(gT_leftover_masks.size(), CV_8UC1, cv::Scalar(255));
-					cv::Mat oneMask_OURLO(ourMasks_leftover.size(), CV_8UC1, cv::Scalar(255));
-
-					int ourLeftoverPixels = 0;
-					int gTLeftoverPixels = 0; 
-					// COMPARING OUR LEFTOVER MASKS WITH GROUND TRUTH'S ONES => R_i CALCULATIONS
-					for (int row = our_rect_lo.getCoords().at(1); row < our_rect_lo.getCoords().at(1) + our_rect_lo.getCoords().at(3); row++)
-					{
-						for (int col = our_rect_lo.getCoords().at(0); col < our_rect_lo.getCoords().at(0) + our_rect_lo.getCoords().at(2); col++)
-							if (ourMasks_leftover.at<uchar>(row, col) == (uchar)our_rect_lo.getRectId())
-							{
-								oneMask_OURLO.at<uchar>(row, col) = (uchar)our_rect_lo.getRectId();
-								ourLeftoverPixels++;
-							}
-					}
-					for (int row = gT_rect_lo.getCoords().at(1); row < gT_rect_lo.getCoords().at(1) + gT_rect_lo.getCoords().at(3); row++)
-					{
-						for (int col = gT_rect_lo.getCoords().at(0); col < gT_rect_lo.getCoords().at(0) + gT_rect_lo.getCoords().at(2); col++)
-							if (gT_leftover_masks.at<uchar>(row, col) == (uchar)gT_rect_lo.getRectId())
-							{
-								oneMask_GTLO.at<uchar>(row, col) = (uchar)gT_rect_lo.getRectId();
-								gTLeftoverPixels++;
-							}
-					}
-
-					std::cout << "\nLeftover's pixels. Food " << our_rect_lo.getRectId() << ": " << ourLeftoverPixels;
-					std::cout << "\nABS of difference. Food " << our_rect_lo.getRectId() << ": " << abs(ourLeftoverPixels - gTLeftoverPixels);
-
-					for (auto& our_rect_fi : our_rects_FI)
-					{
-						if (gT_rect_lo.getRectId() == our_rect_fi.getRectId())
-						{
-							cv::Mat oneMask_OURFI(ourMasks_FI.size(), CV_8UC1, cv::Scalar(255));
-							for (int row = our_rect_fi.getCoords().at(1); row < our_rect_fi.getCoords().at(1) + our_rect_fi.getCoords().at(3); row++)
-							{
-								for (int col = our_rect_fi.getCoords().at(0); col < our_rect_fi.getCoords().at(0) + our_rect_fi.getCoords().at(2); col++)
-									if (ourMasks_FI.at<uchar>(row, col) == (uchar)our_rect_fi.getRectId())
-									{
-										oneMask_OURFI.at<uchar>(row, col) = (uchar)our_rect_fi.getRectId();
-									}
-							}
-
-							output += std::to_string(singlePlateLeftoverEstimationMetric(oneMask_OURFI, oneMask_OURLO)) + "   ";
-						}
-					}
-					break;
-				}
-			}
-
-			if (!foundMatch) {
-				//There's no match, no food item founded in our image 
-				//(BAD NEWS if wrong detection / GOOD NEWS if leftover has no food left)
-				output += "0  ";
-				//std::cout << "\n" << "NO MATCH FOR FOOD: " << gT_rect_lo.getRectId() << " in " << gT_leftover_BBs << "(ORIGINAL IMAGE IS "
-					//<< ourBBs_leftover << ")";
-			}
-
-		}
-
-		output += "}";
-		std::cout << output << "\n";*/
 	}
 
 	gtf += numberFoodItemsSingleImage;
 
-
-	return 	std::make_pair(sum_iou, numberFoodItemsSingleImage);
+	return 	std::make_pair(sumIoUs, numberFoodItemsSingleImage);
 }

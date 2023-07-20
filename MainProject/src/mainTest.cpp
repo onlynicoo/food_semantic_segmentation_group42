@@ -11,8 +11,8 @@ int main( int argc, char** argv ) {
 
     // Read arguments
     if (argc < 3) {
-        for (int left = 1; left <= 1; left++) {
-            for (int tray = 1; tray <= 1; tray++) {
+        for (int left = 3; left <= 3; left++) {
+            for (int tray = 4; tray <= 4; tray++) {
             std::cout << "Tray " + std::to_string(tray) << " Leftover " << std::to_string(left) << std::endl;
             std::string str1 = "../input/Food_leftover_dataset/tray" + std::to_string(tray) + "/food_image.jpg";
             std::string str2 = "../input/Food_leftover_dataset/tray" + std::to_string(tray) + "/leftover" + std::to_string(left) + ".jpg";
@@ -30,7 +30,7 @@ int main( int argc, char** argv ) {
         trayVec.push_back(my_tray);
     }
     Test myTestR = Test(trayVec);
-    myTestR.test_the_system("../input/Food_leftover_dataset");
+    myTestR.testTheSystem("../input/Food_leftover_dataset");
 
 
     return 0;

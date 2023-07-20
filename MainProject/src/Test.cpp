@@ -115,7 +115,7 @@ void Test::test_the_system(const std::string& dataSetPath)
 	int numImagesDataset = 0;
 
 	//Pairs (classID,#occurencies) in dataset
-	std::vector<std::pair<int, int>> gTfoodItem_numbers;
+	std::vector<std::pair<int, int>> gTfoodItemNumbers;
 
 	//All the matches found so far
 	std::vector<double> mAPs;
@@ -124,33 +124,33 @@ void Test::test_the_system(const std::string& dataSetPath)
 	{
 		std::vector<Prediction> predictionsOneTray;
 		std::set<int> predictedClassesOneTray;
-		std::vector<std::pair<int, int>> gTfoodItem_numbersOneTray;
+		std::vector<std::pair<int, int>> gTfoodItemNumbersOneTray;
 
 
 		//Indentifying Tray Number: elaborating it
-		Tray t_lo = trayVector.at(i);
-		int TrayNumber = findTrayNumber(t_lo.getTrayAfterPath());
-		int leftoverNumber = findLeftoverNumber(t_lo.getTrayAfterPath());
+		Tray tLo = trayVector.at(i);
+		int TrayNumber = findTrayNumber(tLo.getTrayAfterPath());
+		int leftoverNumber = findLeftoverNumber(tLo.getTrayAfterPath());
 
 		std::cout << "\n\nFoodImage (Tray" << TrayNumber << ")\n";
 
 		std::string outputPath = "../output";
 
 		//Food Image (before) masks
-		cv::Mat ourMasks_FI = cv::imread(outputPath + "/tray" + std::to_string(TrayNumber) + "/masks/food_image_mask.png", cv::IMREAD_GRAYSCALE);
-		cv::Mat masks_FI = cv::imread(dataSetPath + "/tray" + std::to_string(TrayNumber) + "/masks/food_image_mask.png", cv::IMREAD_GRAYSCALE);
+		cv::Mat ourMasksFI = cv::imread(outputPath + "/tray" + std::to_string(TrayNumber) + "/masks/food_image_mask.png", cv::IMREAD_GRAYSCALE);
+		cv::Mat masksFI = cv::imread(dataSetPath + "/tray" + std::to_string(TrayNumber) + "/masks/food_image_mask.png", cv::IMREAD_GRAYSCALE);
 
 		//Food Image (before) bounding boxes
-		std::string ourBBs_FI = outputPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/food_image_bounding_box.txt";
-		std::string gT_BBs_FI = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/food_image_bounding_box.txt";
+		std::string ourBBsFI = outputPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/food_image_bounding_box.txt";
+		std::string gTBBsFI = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/food_image_bounding_box.txt";
 
 
-		std::pair<double, int> result_of_single_IoU_FI = OneImageSegmentationMetricCalculations(0, masks_FI, gT_BBs_FI, ourMasks_FI, ourBBs_FI, predictionsOneTray,
-			predictedClassesOneTray, gTfoodItem_numbersOneTray,numImagesDataset, cv::Mat(), "", cv::Mat(), "");
+		std::pair<double, int> resultOfSingleIoUFI = OneImageSegmentationMetricCalculations(0, masksFI, gTBBsFI, ourMasksFI, ourBBsFI, predictionsOneTray,
+			predictedClassesOneTray, gTfoodItemNumbersOneTray,numImagesDataset, cv::Mat(), "", cv::Mat(), "");
 
 		//Updating mIoU every time
-		double temp = mIoU * groundTruthFoods + result_of_single_IoU_FI.first;
-		groundTruthFoods += result_of_single_IoU_FI.second;
+		double temp = mIoU * groundTruthFoods + resultOfSingleIoUFI.first;
+		groundTruthFoods += resultOfSingleIoUFI.second;
 		mIoU = temp / groundTruthFoods;
 
 
@@ -158,17 +158,17 @@ void Test::test_the_system(const std::string& dataSetPath)
 		double sumAPFI = 0.0;
 		for (const auto& pcFI : predictedClassesOneTray)
 		{
-			int gtNumItemClass_pc = -1;
-			for (const auto& nums_ot : gTfoodItem_numbersOneTray)
+			int gtNumItemClassPC = -1;
+			for (const auto& nums_ot : gTfoodItemNumbersOneTray)
 			{
 				if (nums_ot.first == pcFI)
 				{
-					gtNumItemClass_pc = nums_ot.second;
+					gtNumItemClassPC = nums_ot.second;
 					break;
 				}
 			}
 
-			sumAPFI += calculateAP(predictionsOneTray, pcFI, gtNumItemClass_pc);
+			sumAPFI += calculateAP(predictionsOneTray, pcFI, gtNumItemClassPC);
 		}
 		double mAPFI = sumAPFI / predictedClassesOneTray.size();
 		std::cout << "\nFood Image mAP = " << mAPFI << "\n\n";
@@ -178,22 +178,22 @@ void Test::test_the_system(const std::string& dataSetPath)
 
 		std::vector<Prediction> predictionsLeftover;
 		std::set<int> predictedClassesLeftover;
-		std::vector<std::pair<int, int>> gTfoodItem_numbersLeftover;
+		std::vector<std::pair<int, int>> gTfoodItemNumbersLeftover;
 
-		cv::Mat ourMasks_LO = cv::imread(outputPath + "/tray" + std::to_string(TrayNumber) + "/masks/leftover" + std::to_string(leftoverNumber) + ".png", cv::IMREAD_GRAYSCALE);
-		std::string ourBBs_LO = outputPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/leftover" + std::to_string(leftoverNumber) + "_bounding_box.txt";
+		cv::Mat ourMasksLO = cv::imread(outputPath + "/tray" + std::to_string(TrayNumber) + "/masks/leftover" + std::to_string(leftoverNumber) + ".png", cv::IMREAD_GRAYSCALE);
+		std::string ourBBsLO = outputPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/leftover" + std::to_string(leftoverNumber) + "_bounding_box.txt";
 
 		//Corresponding prof's
-		cv::Mat masks_LO = cv::imread(dataSetPath + "/tray" + std::to_string(TrayNumber) + "/masks/leftover" + std::to_string(leftoverNumber) + ".png", cv::IMREAD_GRAYSCALE);
-		std::string gT_BBs_LO = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/leftover" + std::to_string(leftoverNumber) + "_bounding_box.txt";
+		cv::Mat masksLO = cv::imread(dataSetPath + "/tray" + std::to_string(TrayNumber) + "/masks/leftover" + std::to_string(leftoverNumber) + ".png", cv::IMREAD_GRAYSCALE);
+		std::string gTBBsLO = dataSetPath + "/tray" + std::to_string(TrayNumber) + "/bounding_boxes/leftover" + std::to_string(leftoverNumber) + "_bounding_box.txt";
 
-		std::pair<double, int> result_of_single_IoU_LO = OneImageSegmentationMetricCalculations(leftoverNumber, masks_FI, gT_BBs_FI, ourMasks_FI, ourBBs_FI, predictionsLeftover,
-			predictedClassesLeftover, gTfoodItem_numbersLeftover, numImagesDataset, masks_LO, gT_BBs_LO, ourMasks_LO, ourBBs_LO);
+		std::pair<double, int> resultOfSingleIoULO = OneImageSegmentationMetricCalculations(leftoverNumber, masksFI, gTBBsFI, ourMasksFI, ourBBsFI, predictionsLeftover,
+			predictedClassesLeftover, gTfoodItemNumbersLeftover, numImagesDataset, masksLO, gTBBsLO, ourMasksLO, ourBBsLO);
 
 		//Updating mIoU every time
 
-		temp = mIoU * groundTruthFoods + result_of_single_IoU_LO.first;
-		groundTruthFoods += result_of_single_IoU_LO.second;
+		temp = mIoU * groundTruthFoods + resultOfSingleIoULO.first;
+		groundTruthFoods += resultOfSingleIoULO.second;
 		mIoU = temp / groundTruthFoods;
 
 		if (leftoverNumber != 3)
@@ -201,17 +201,17 @@ void Test::test_the_system(const std::string& dataSetPath)
 			double sumAPLO = 0.0;
 			for (const auto& pcLO : predictedClassesLeftover)
 			{
-				int gtNumItemClass_pcLO = -1;
-				for (const auto& nums_ot : gTfoodItem_numbersLeftover)
+				int gtNumItemClassPCLO = -1;
+				for (const auto& numsOt : gTfoodItemNumbersLeftover)
 				{
-					if (nums_ot.first == pcLO)
+					if (numsOt.first == pcLO)
 					{
-						gtNumItemClass_pcLO = nums_ot.second;
+						gtNumItemClassPCLO = numsOt.second;
 						break;
 					}
 				}
 
-				sumAPLO += calculateAP(predictionsLeftover, pcLO, gtNumItemClass_pcLO);
+				sumAPLO += calculateAP(predictionsLeftover, pcLO, gtNumItemClassPCLO);
 			}
 			double mAPLO = sumAPLO / predictedClassesLeftover.size();
 			std::cout << "Leftover mAP = " << mAPLO << "\n\n";
@@ -225,10 +225,10 @@ void Test::test_the_system(const std::string& dataSetPath)
 			predictedClassesOneTray.insert(pclo);
 
 
-		for (const auto& nLO : gTfoodItem_numbersLeftover)
+		for (const auto& nLO : gTfoodItemNumbersLeftover)
 		{
 			bool setted = false;
-			for (auto& nOt : gTfoodItem_numbersOneTray)
+			for (auto& nOt : gTfoodItemNumbersOneTray)
 			{
 				if (nLO.first == nOt.first)
 				{
@@ -237,25 +237,25 @@ void Test::test_the_system(const std::string& dataSetPath)
 				}
 			}
 			if (!setted)
-				gTfoodItem_numbersOneTray.push_back(std::make_pair(nLO.first, nLO.second));
+				gTfoodItemNumbersOneTray.push_back(std::make_pair(nLO.first, nLO.second));
 		}
 
 
 		//Computing tray mAP
 		double sumAPTray = 0.0;
-		for (const auto& pc_ot : predictedClassesOneTray)
+		for (const auto& pcOt : predictedClassesOneTray)
 		{
 			int gtNumItemClass_pc = -1;
-			for (const auto& nums_ot : gTfoodItem_numbersOneTray)
+			for (const auto& numsOt : gTfoodItemNumbersOneTray)
 			{
-				if (nums_ot.first == pc_ot)
+				if (numsOt.first == pcOt)
 				{
-					gtNumItemClass_pc = nums_ot.second;
+					gtNumItemClass_pc = numsOt.second;
 					break;
 				}
 			}
 
-			sumAPTray += calculateAP(predictionsOneTray, pc_ot, gtNumItemClass_pc);
+			sumAPTray += calculateAP(predictionsOneTray, pcOt, gtNumItemClass_pc);
 		}
 		double mAPOT = sumAPTray / predictedClassesOneTray.size();
 		std::cout << "\nTray mAP = " << mAPOT << "\n";
@@ -266,29 +266,10 @@ void Test::test_the_system(const std::string& dataSetPath)
 			predictions.push_back(pot);
 		for (const auto& pcot : predictedClassesOneTray)
 			predictedClasses.insert(pcot);
-		/*
-		for (int nOt_ = 0; nOt_ < gTfoodItem_numbersOneTray.size(); nOt_++)
-		{
-			std::pair<int,int> nOt = gTfoodItem_numbersOneTray.at(nOt_);
-			bool setted = false;
-			for (int n_ = 0; n_ < gTfoodItem_numbers.size(); n_++)
-			{
-				std::pair<int, int> n = gTfoodItem_numbers.at(n_);
-				if (nOt.first == n.first)
-				{
-					n.second = n.second + nOt.second;
-					setted = true;
-				}
-			}		
-			if (!setted)
-				gTfoodItem_numbers.push_back(std::make_pair(nOt.first, nOt.second));
-		}
-		*/
-
-		for (const auto& nOt : gTfoodItem_numbersOneTray)
+		for (const auto& nOt : gTfoodItemNumbersOneTray)
 		{
 			bool setted = false;
-			for (auto& n : gTfoodItem_numbers)
+			for (auto& n : gTfoodItemNumbers)
 			{
 				if (nOt.first == n.first)
 				{
@@ -298,16 +279,15 @@ void Test::test_the_system(const std::string& dataSetPath)
 
 			}
 			if (!setted)
-				gTfoodItem_numbers.push_back(std::make_pair(nOt.first, nOt.second));
+				gTfoodItemNumbers.push_back(std::make_pair(nOt.first, nOt.second));
 		}
-
 
 		predictionsOneTray.clear();
 		predictedClassesOneTray.clear();
-		gTfoodItem_numbersOneTray.clear();
+		gTfoodItemNumbersOneTray.clear();
 		predictionsLeftover.clear();
 		predictedClassesLeftover.clear();
-		gTfoodItem_numbersLeftover.clear();
+		gTfoodItemNumbersLeftover.clear();
 
 		std::cout << "\n\n";
 	}
@@ -316,18 +296,18 @@ void Test::test_the_system(const std::string& dataSetPath)
 	double sumAP = 0.0;
 	for (const auto& pc : predictedClasses)
 	{
-		int gtNumItemClass_pc = -1;
-		for (const auto& nums : gTfoodItem_numbers)
+		int gtNumItemClassPC = -1;
+		for (const auto& nums : gTfoodItemNumbers)
 		{
 			if (nums.first == pc)
 			{
-				gtNumItemClass_pc = nums.second;
+				gtNumItemClassPC = nums.second;
 				break;
 			}
 		}
 
 
-		sumAP += calculateAP(predictions, pc, gtNumItemClass_pc);
+		sumAP += calculateAP(predictions, pc, gtNumItemClassPC);
 	}
 	double mAP = sumAP / predictedClasses.size();
 
