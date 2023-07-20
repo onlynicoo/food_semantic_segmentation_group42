@@ -4,12 +4,22 @@
 #include "../include/Tray.h"
 #include "../include/Test.h"
 
+/*
+    Main class for the system with metrics
+*/
 int main( int argc, char** argv ) {
 
     std::vector<Tray> trayVec;
 
-    // Read arguments
-    if (argc < 3) {
+    // If two images are passed as arguments, they are processed as a Tray
+    if (argc == 3) {
+        std::string before = argv[1];
+        std::string after = argv[2];
+        Tray my_tray = Tray(before, after);
+        trayVec.push_back(my_tray);
+    }
+    else {
+        // Otherwise, all possibile Tray combinations are processed
         for (int left = 1; left <= 3; left++) {
             for (int tray = 1; tray <= 8; tray++) {
                 std::cout << "Tray " + std::to_string(tray) << " Leftover " << std::to_string(left) << std::endl;
@@ -21,13 +31,8 @@ int main( int argc, char** argv ) {
             }
         }
     }
-    else {
-        std::string before = argv[1];
-        std::string after = argv[2];
-        Tray my_tray = Tray(before, after);
-        trayVec.push_back(my_tray);
-    }
     
+    // The Tray vector is tested evaluating the metrics
     Test myTest = Test(trayVec);
     myTest.testTheSystem("../input/Food_leftover_dataset");
 

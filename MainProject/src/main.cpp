@@ -3,11 +3,21 @@
 
 #include "../include/Tray.h"
 
+/*
+    Main class for the system
+*/
 int main(int argc, char** argv) {
     std::vector<Tray> trayVec;
 
-    // Read arguments
-    if (argc < 3) {
+    // If two images are passed as arguments, they are processed as a Tray
+    if (argc == 3) {
+        std::string before = argv[1];
+        std::string after = argv[2];
+        Tray my_tray = Tray(before, after);
+        my_tray.printFoodQuantities();
+        my_tray.showTray();
+    } else {
+        // Otherwise, all possibile Tray combinations are processed
         for (int left = 1; left <= 3; left++) {
             for (int tray = 1; tray <= 8; tray++) {
                 std::cout << "Tray " + std::to_string(tray) << " Leftover " << std::to_string(left) << std::endl;
@@ -20,11 +30,6 @@ int main(int argc, char** argv) {
                 std::cout << std::endl;
             }
         }
-    } else {
-        std::string before = argv[1];
-        std::string after = argv[2];
-        Tray my_tray = Tray(before, after);
-        my_tray.showTray();        
     }
     return 0;
 }

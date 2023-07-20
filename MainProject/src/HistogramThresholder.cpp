@@ -105,26 +105,6 @@ void HistogramThresholder::getImageHistogram(const cv::Mat& img, const cv::Mat& 
 }
 
 /**
- * The function writes the labels histograms to a file.
- * 
- * @param histograms The parameter `histograms` is a `cv::Mat` object, which represents a matrix
- * containing the histograms. It is passed by reference to the `writeLabelsHistogramsToFile` function.
- */
-void HistogramThresholder::writeLabelsHistogramsToFile(const cv::Mat& histograms) {
-    std::ofstream out(LABELS_HISTOGRAMS_PATH);
-    if (!out.is_open())
-        std::cout << "Error creating " << LABELS_HISTOGRAMS_PATH << std::endl;
-        
-    out << histograms.rows << std::endl << histograms.cols << std::endl;
-    for (int r = 0; r < histograms.rows; r++) {
-        for (int c = 0; c < histograms.cols; c++)
-            out << int(histograms.at<uchar>(r,c)) << " ";
-        out << std::endl;
-    }
-    out.close();
-}
-
-/**
  * The function reads histograms from a file and stores them in a cv::Mat object.
  * 
  * @param histograms A reference to a cv::Mat object that will store the histograms read from the file.

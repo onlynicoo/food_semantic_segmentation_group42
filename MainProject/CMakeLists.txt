@@ -9,10 +9,6 @@ find_package(OpenCV REQUIRED)
 include_directories($(OpenCV_INCLUDE_DIRS))
 
 # Executables
-add_executable(EvaluateLabelsHistograms
-    src/EvaluateLabelsHistograms.cpp
-)
-
 add_executable(main
     src/main.cpp
 )
@@ -64,15 +60,11 @@ target_link_libraries(MetricsCalculation ${OpenCV_LIBS})
 target_link_libraries(FoodSegmenter ${OpenCV_LIBS})
 target_link_libraries(Test ${OpenCV_LIBS})
 
-target_link_libraries(EvaluateLabelsHistograms HistogramThresholder)
 target_link_libraries(main Tray)
 target_link_libraries(mainTest Tray Test)
 target_link_libraries(FoodSegmenter HistogramThresholder Utils)
 target_link_libraries(Test Tray MetricsCalculation)
 target_link_libraries(Tray FoodFinder FoodSegmenter Utils)
-
-# Create data folder
-file(MAKE_DIRECTORY data)
 
 # Create main output folder
 file(MAKE_DIRECTORY output)

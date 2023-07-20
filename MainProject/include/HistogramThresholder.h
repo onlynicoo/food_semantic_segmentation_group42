@@ -24,6 +24,5 @@ class HistogramThresholder {
 
         static void getImageHistogram(const cv::Mat&, const cv::Mat&, cv::Mat&);
         static std::vector<LabelDistance> getLabelDistances(const cv::Mat&, std::vector<int>, const cv::Mat&);
-        static void writeLabelsHistogramsToFile(const cv::Mat&);
         static void readLabelsHistogramsFromFile(cv::Mat&);
 };
